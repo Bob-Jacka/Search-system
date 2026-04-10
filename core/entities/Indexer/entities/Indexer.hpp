@@ -1,0 +1,9 @@
+#ifndef SEARCH_SYSTEM_INDEXER_HPP
+#define SEARCH_SYSTEM_INDEXER_HPP
+
+
+class Indexer {
+};
+
+
+#endif //SEARCH_SYSTEM_INDEXER_HPP
