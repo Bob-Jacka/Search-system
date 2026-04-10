@@ -1,6 +1,7 @@
 #ifndef NETOLIBPQ_DBCONTROLLER_HPP
 #define NETOLIBPQ_DBCONTROLLER_HPP
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -20,7 +21,7 @@ namespace App {
 
     class DB_controller {
     private:
-        std::unique_ptr<pqxx::connection> cx;
+        std::unique_ptr<pqxx::connection> cx; //one connection to rule the world
 
     public:
         DB_controller();
