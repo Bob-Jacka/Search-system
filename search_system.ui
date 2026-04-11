@@ -31,7 +31,7 @@
       <enum>QLayout::SizeConstraint::SetMinimumSize</enum>
      </property>
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout">
+      <layout class="QVBoxLayout" name="search_bar">
        <property name="spacing">
         <number>0</number>
        </property>
@@ -42,14 +42,25 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QLabel" name="select_txt">
-         <property name="text">
-          <string>Enter text to search</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="action_bar">
+         <item>
+          <widget class="QPushButton" name="search_btn">
+           <property name="text">
+            <string>Search</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="select_txt">
+           <property name="text">
+            <string>Enter text to search above</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
-        <widget class="QTextEdit" name="textEdit">
+        <widget class="QTextEdit" name="to_search">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
            <horstretch>0</horstretch>
@@ -67,7 +78,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_6">
+      <layout class="QVBoxLayout" name="search_results">
        <item>
         <widget class="QLabel" name="label_3">
          <property name="text">
@@ -76,7 +87,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QListView" name="listView_3"/>
+        <widget class="QListView" name="results"/>
        </item>
       </layout>
      </item>
@@ -89,7 +100,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>

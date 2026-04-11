@@ -2,7 +2,7 @@ module;
 
 /**
  Custom library for actions in Netology C++ course and later for more serious projects.
- Version - 1.25.0
+ Version - 1.25.1
  This library could be a module, but yes, later rewritten to module with LIBIO_EXPERIMENTAL functions.
  Some kind of Boost library for poor people.
 
@@ -803,7 +803,6 @@ namespace libio {
             } catch (const std::exception &e) {
                 std::cerr << e.what() << "\n";
             }
-            return nullptr;
         }
 
 #ifdef LIBIO_EXPERIMENTAL
@@ -933,7 +932,7 @@ namespace libio {
          */
         std::string get_current_dir_name(const std::string &optional_file_name = "") {
             auto res = std::filesystem::current_path().string();
-            if (optional_file_name != "") {
+            if (!optional_file_name.empty()) {
                 res += "/" + optional_file_name;
             }
             return res;

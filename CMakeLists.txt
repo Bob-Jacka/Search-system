@@ -1,6 +1,47 @@
-cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 3.31)
 project(Search_system)
 
-set(CMAKE_CXX_STANDARD 20)
+add_compile_options(-Wall -Wextra)
 
-add_executable(Search_system main.cpp)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
+set(CMAKE_DEFAULT_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
+
+message("Available configs: ${CMAKE_CONFIGURATION_TYPES}")
+message("Default config: ${CMAKE_DEFAULT_BUILD_TYPE}")
+find_package(Qt6 COMPONENTS
+        Core
+        Gui
+        Widgets
+        Multimedia
+        MultimediaWidgets
+        UiTools # for dynamic loading
+        REQUIRED
+)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+add_subdirectory(core/entities)
+
+add_executable(Search_system
+        main.cpp
+        search_system.ui
+        libio.cppm
+)
+
+target_link_libraries(Search_system
+        PRIVATE
+        Qt6::Core
+        Qt6::Widgets
+        Qt6::Multimedia
+        Qt6::MultimediaWidgets
+        Qt6::UiTools # for dynamic loading
+)
+
+target_sources(Search_system
+        PUBLIC
+        FILE_SET all_my_modules TYPE CXX_MODULES FILES
+        libio.cppm
+)
