@@ -3,7 +3,7 @@
 
 ///////////////////////DB_controller
 
-App::DB_controller::DB_controller() {
+DB_controller::DB_controller(DB_controller_builder &builder) {
     try {
         //Test connection
         cx = std::make_unique<pqxx::connection>(
@@ -17,7 +17,7 @@ App::DB_controller::DB_controller() {
     }
 }
 
-void App::DB_controller::init_tables() {
+void DB_controller::init_tables() {
     using namespace libio::database;
     try {
         pqxx::transaction trn(*cx);
@@ -29,8 +29,8 @@ void App::DB_controller::init_tables() {
     }
 }
 
-std::vector<App::DB_entities::Client>
-App::DB_controller::find_clients(libio::String_con_ref query) const {
+std::vector<DB_entities::Client>
+DB_controller::find_clients(libio::String_con_ref query) const {
     using namespace libio::database;
     using namespace DB_entities;
     std::vector<Client> result;
@@ -52,14 +52,14 @@ App::DB_controller::find_clients(libio::String_con_ref query) const {
     return result;
 }
 
-void App::DB_controller::drop_tables() const {
+void DB_controller::drop_tables() const {
     using namespace libio::database;
     pqxx::transaction trn(*cx);
     trn.exec(Sql_methods::DROP + " TABLE IF EXISTS clients, phones;");
     trn.commit();
 }
 
-void App::DB_controller::add_client(const DB_entities::Client &client, const std::string &phone) const {
+void DB_controller::add_client(const DB_entities::Client &client, const std::string &phone) const {
     using namespace libio::database;
     pqxx::transaction trn(*cx);
     cx->set_client_encoding("UTF8");
@@ -77,7 +77,7 @@ void App::DB_controller::add_client(const DB_entities::Client &client, const std
     }
 }
 
-void App::DB_controller::add_phone(const std::string &name, const std::string &phone) const {
+void DB_controller::add_phone(const std::string &name, const std::string &phone) const {
     pqxx::transaction trn(*cx);
     pqxx::result res = trn.exec_params("SELECT id, surname FROM clients WHERE name = $1;", name);
     if (!res.empty()) {
@@ -90,8 +90,8 @@ void App::DB_controller::add_phone(const std::string &name, const std::string &p
 }
 
 void
-App::DB_controller::update_client(const std::string &email, const std::string &newName, const std::string &newSurname,
-                                  const std::string &newEmail) const {
+DB_controller::update_client(const std::string &email, const std::string &newName, const std::string &newSurname,
+                             const std::string &newEmail) const {
     pqxx::transaction trn(*cx);
     pqxx::result res = trn.exec_params("SELECT id FROM clients WHERE email = $1;", email);
     if (!res.empty()) {
@@ -105,7 +105,7 @@ App::DB_controller::update_client(const std::string &email, const std::string &n
     }
 }
 
-void App::DB_controller::remove_phone(const std::string &email, const std::string &phone) const {
+void DB_controller::remove_phone(const std::string &email, const std::string &phone) const {
     using namespace libio::database;
     pqxx::transaction trn(*cx);
     pqxx::result res = trn.exec_params("SELECT id, name, surname FROM clients WHERE email = $1;", email);
@@ -121,7 +121,7 @@ void App::DB_controller::remove_phone(const std::string &email, const std::strin
     }
 }
 
-void App::DB_controller::remove_client(const std::string &email) const {
+void DB_controller::remove_client(const std::string &email) const {
     using namespace libio::database;
     pqxx::transaction trn(*cx);
     pqxx::result res = trn.exec_params("SELECT id, name, surname FROM clients WHERE email = $1;", email);
@@ -138,7 +138,7 @@ void App::DB_controller::remove_client(const std::string &email) const {
     }
 }
 
-void App::DB_controller::select_all() const {
+void DB_controller::select_all() const {
     using namespace libio::database;
     pqxx::transaction trn(*cx);
 
@@ -159,4 +159,43 @@ void App::DB_controller::select_all() const {
             libio::output::println();
         }
     }
+}
+
+DB_controller::DB_controller(DB_controller &&other) noexcept {
+    cx = std::move(other.cx);
+    host = std::move(other.host);
+    port = std::move(other.port);
+    db_name = std::move(other.db_name);
+    user_name = std::move(other.user_name);
+    password = std::move(other.password);
+    other.cx = nullptr;
+}
+
+DB_controller_builder &DB_controller_builder::set_host(const std::string &host_str) {
+    controller.host = host_str;
+    return *this;
+}
+
+DB_controller_builder &DB_controller_builder::set_port(const std::string &port_str) {
+    controller.port = port_str;
+    return *this;
+}
+
+DB_controller_builder &DB_controller_builder::set_db_name(const std::string &db_name_str) {
+    controller.db_name = db_name_str;
+    return *this;
+}
+
+DB_controller_builder &DB_controller_builder::set_user(const std::string &user_str) {
+    controller.user_name = user_str;
+    return *this;
+}
+
+DB_controller_builder &DB_controller_builder::set_password(const std::string &password_str) {
+    controller.password = password_str;
+    return *this;
+}
+
+DB_controller DB_controller_builder::build() {
+    return std::move(this->controller);
 }
