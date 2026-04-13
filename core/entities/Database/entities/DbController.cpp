@@ -30,7 +30,7 @@ void DB_controller::init_tables() {
 }
 
 std::vector<DB_entities::Client>
-DB_controller::find_clients(libio::String_con_ref query) const {
+DB_controller::find_word(libio::String_con_ref query) const {
     using namespace libio::database;
     using namespace DB_entities;
     std::vector<Client> result;
@@ -171,6 +171,7 @@ DB_controller::DB_controller(DB_controller &&other) noexcept {
     other.cx = nullptr;
 }
 
+//Controller builder class:
 DB_controller_builder &DB_controller_builder::set_host(const std::string &host_str) {
     controller.host = host_str;
     return *this;

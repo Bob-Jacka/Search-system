@@ -16,9 +16,6 @@ find_package(Qt6 COMPONENTS
         Core
         Gui
         Widgets
-        Multimedia
-        MultimediaWidgets
-        UiTools # for dynamic loading
         REQUIRED
 )
 include_directories(${OpenCV_INCLUDE_DIRS})
@@ -35,9 +32,6 @@ target_link_libraries(Search_system
         PRIVATE
         Qt6::Core
         Qt6::Widgets
-        Qt6::Multimedia
-        Qt6::MultimediaWidgets
-        Qt6::UiTools # for dynamic loading
 )
 
 target_sources(Search_system

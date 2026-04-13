@@ -5,8 +5,8 @@
 #include <iostream>
 
 class SQLexception final : std::exception {
-public:
-    explicit SQLexception(int line, const std::string &msg, const char *filename);
+    public:
+        explicit SQLexception(int line, const std::string &msg, const char *filename);
 };
 
 inline SQLexception::SQLexception(const int line, const std::string &msg, const char *filename) {

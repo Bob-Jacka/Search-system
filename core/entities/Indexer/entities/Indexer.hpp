@@ -1,10 +1,10 @@
 #ifndef SEARCH_SYSTEM_INDEXER_HPP
 #define SEARCH_SYSTEM_INDEXER_HPP
 
-#include <string>
-#include <filesystem>
 #include <algorithm>
 #include <execution>
+#include <filesystem>
+#include <string>
 
 import Libio;
 
@@ -15,25 +15,29 @@ class DB_controller;
 class Ini_parser;
 
 class Indexer {
-private:
-    std::vector<std::string> result = std::vector<std::string>();
+    private:
+        std::vector<std::string> result = std::vector<std::string>();
 
-    std::vector<std::string> index_dir(const filesys::path &path);
+        DB_controller *controller;
 
-    DB_controller *controller;
+        std::string valid_patter;
 
-    std::string valid_patter;
+        std::vector<std::string> index_dir(const filesys::path &path);
 
-public:
-    Indexer() = delete;
+        void save_results_2_db();
 
-    Indexer(DB_controller *, const std::string& pattern);
+        void init_db_structure();
 
-    ~Indexer() = default;
+    public:
+        Indexer() = delete;
 
-    static std::unordered_map<std::string, int> count_freq(const std::vector<std::string> &words);
+        Indexer(DB_controller *, const std::string &pattern);
 
-    void process_dir(const std::string &start_point); ///main entry point to indexer
+        ~Indexer() = default;
+
+        static std::unordered_map<std::string, int> count_freq(const std::vector<std::string> &words);
+
+        void process_dir(const std::string &start_point); ///main entry point to indexer
 };
 
 #endif
