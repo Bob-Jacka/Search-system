@@ -3,7 +3,7 @@
 
 /**
  * Entry point to indexer program
- * @param start_point
+ * @param start_point starting point to execute indexer co program
  */
 void Indexer::process_dir(const std::string &start_point) {
     const filesys::path dir(start_point);
@@ -20,12 +20,14 @@ void Indexer::process_dir(const std::string &start_point) {
  * @param path path to directory
  * @return vector with processed strings
  */
-std::vector<std::string> Indexer::index_dir(const filesys::path &path) {
+void Indexer::index_dir(const filesys::path &path) {
     for (const auto &entry: filesys::directory_iterator(path)) {
-        if (filesys::is_directory(entry.path())) {
-            index_dir(entry.path());
-        } else if (filesys::is_regular_file(entry.path())) {
-            auto file_txt = libio::file::read_file(entry.path().string());
+        const auto &dir_path = entry.path();
+        const auto file_name = dir_path.filename();
+        if (filesys::is_directory(path)) {
+            index_dir(dir_path);
+        } else if (filesys::is_regular_file(dir_path)) {
+            auto file_txt = libio::file::read_file(dir_path.string());
 
             //clear results:
             std::for_each(std::execution::par_unseq, file_txt.begin(), file_txt.end(),
@@ -36,10 +38,11 @@ std::vector<std::string> Indexer::index_dir(const filesys::path &path) {
                            [](const auto &to_low_str) {
                                return libio::string::change_string_register(to_low_str, true);
                            });
+
+            auto freq = count_freq(result);
+            controller->add_document(freq, dir_path, file_name);
         }
     }
-    controller->add_document();
-    return result; //Maybe save to db directly
 }
 
 std::unordered_map<std::string, int> Indexer::count_freq(const std::vector<std::string> &words) {
@@ -51,6 +54,6 @@ std::unordered_map<std::string, int> Indexer::count_freq(const std::vector<std::
 }
 
 Indexer::Indexer(DB_controller *db, const std::string &pattern) {
-    controller   = db;
+    controller = db;
     valid_patter = pattern;
 }

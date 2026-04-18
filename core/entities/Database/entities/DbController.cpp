@@ -3,15 +3,25 @@
 
 ///////////////////////DB_controller
 
-DB_controller::DB_controller(DB_controller_builder &builder) {
+DB_controller::DB_controller(DB_controller &&other) noexcept {
+    cx = std::move(other.cx);
+    host = std::move(other.host);
+    port = std::move(other.port);
+    db_name = std::move(other.db_name);
+    user_name = std::move(other.user_name);
+    password = std::move(other.password);
+    other.cx = nullptr;
     try {
-        //Test connection
+        std::string builder_strings;
+        builder_strings += "host= " + db_name + "\n";
+        builder_strings += "port= " + port + "\n";
+        builder_strings += "dbname= " + db_name + "\n";
+        builder_strings += "user= " + user_name + "\n";
+        builder_strings += "password= " + password;
+
         cx = std::make_unique<pqxx::connection>(
-                "host=localhost "
-                "port=5432 "
-                "dbname=postgres "
-                "user=postgres "
-                "password=''");
+                builder_strings
+        );
     } catch (...) {
         throw SQLexception(__LINE__, "Error in auth postgres user", __FILE_NAME__);
     }
@@ -21,154 +31,132 @@ void DB_controller::init_tables() {
     using namespace libio::database;
     try {
         pqxx::transaction trn(*cx);
-        trn.exec(Sql_methods::CREATE + R"( TABLE IF NOT EXISTS clients(id SERIAL PRIMARY KEY, name TEXT, surname TEXT, email TEXT UNIQUE);
-        CREATE TABLE IF NOT EXISTS phones(id SERIAL PRIMARY KEY, client_id INT REFERENCES clients(id), phone TEXT UNIQUE);)");
+
+        trn.exec(Sql_methods::CREATE + R"( TABLE IF NOT EXISTS Documents (
+            id BIGSERIAL PRIMARY KEY,
+            file_path TEXT NOT NULL UNIQUE,
+            file_name TEXT NOT NULL,
+        );
+
+        CREATE TABLE IF NOT EXISTS Words (
+            id BIGSERIAL PRIMARY KEY,
+            word VARCHAR(255) NOT NULL UNIQUE
+        );
+
+        CREATE TABLE IF NOT EXISTS DocumentWords (
+            document_id BIGINT NOT NULL,,
+            word_id BIGINT NOT NULL,
+            frequency INTEGER NOT NULL,
+
+            PRIMARY KEY (document_id, word_id),
+
+            CHECK (frequency > 0),
+
+            FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
+            FOREIGN KEY (word_id) REFERENCES words(id) ON DELETE CASCADE
+        );
+    )");
         trn.commit();
     } catch (...) {
         throw SQLexception(__LINE__, "Error in initializing tables", __FILE_NAME__);
     }
 }
 
-std::vector<DB_entities::Client>
-DB_controller::find_word(libio::String_con_ref query) const {
-    using namespace libio::database;
-    using namespace DB_entities;
-    std::vector<Client> result;
-    pqxx::transaction trn(*cx);
-    pqxx::result res = trn.exec_params(Sql_methods::SELECT +
-                                       " * "
-                                       "FROM clients "
-                                       "LEFT JOIN public.phones on public.clients.id = public.phones.client_id "
-                                       "WHERE clients.name = $1 OR clients.surname = $1 OR clients.email = $1 OR phones.phone = $1;",
-                                       query);
-    for (const auto &row: res) {
-        Client client{
-                .name = row["name"].as<std::string>(),
-                .surname=row["surname"].as<std::string>(),
-                .email = row["email"].as<std::string>()
-        };
-        result.push_back(client);
+QList<SearchHit> DB_controller::find_words(const QStringList &query_words) const {
+    QList<SearchHit> results;
+
+    std::vector<std::string> unique_words = query_words;
+    std::sort(unique_words.begin(), unique_words.end());
+    unique_words.erase(std::unique(unique_words.begin(), unique_words.end()), unique_words.end());
+
+    if (unique_words.empty()) {
+        return results;
     }
-    return result;
+
+    pqxx::nontransaction trn(*cx);
+
+    try {
+        pqxx::result res = trn.exec_params(
+                "SELECT d.file_name, d.file_path, SUM(dw.frequency) AS score "
+                "FROM documents d "
+                "JOIN document_words dw ON d.id = dw.document_id "
+                "JOIN words w ON dw.word_id = w.id "
+                "WHERE w.word = ANY($1) "
+                "GROUP BY d.id, d.file_name, d.file_path "
+                "ORDER BY score DESC;",
+                unique_words
+        );
+
+        for (const auto &row: res) {
+            results.push_back({
+                                      .file_name = row["file_name"].as<std::string>(),
+                                      .file_path = row["file_path"].as<std::string>(),
+                                      .total_score = row["score"].as<int>()
+                              });
+        }
+    }
+    catch (const pqxx::sql_error &e) {
+        throw SQLexception(__LINE__, "Failed to search words", __FILE_NAME__);
+    }
+    catch (const std::exception &e) {
+        throw SQLexception(__LINE__, "Failed to search words", __FILE_NAME__);
+    }
+
+    return results;
 }
 
 void DB_controller::drop_tables() const {
     using namespace libio::database;
     pqxx::transaction trn(*cx);
-    trn.exec(Sql_methods::DROP + " TABLE IF EXISTS clients, phones;");
+    trn.exec(Sql_methods::DROP + " TABLE IF EXISTS Documents, Words, DocumentWords;");
     trn.commit();
 }
 
-void DB_controller::add_client(const DB_entities::Client &client, const std::string &phone) const {
-    using namespace libio::database;
-    pqxx::transaction trn(*cx);
+void DB_controller::add_document(const std::unordered_map<std::string, int> &document_data,
+                                 const std::string &dir_path,
+                                 const std::string &file_name) const {
+    pqxx::work trn(*cx);
     cx->set_client_encoding("UTF8");
-    pqxx::result res = trn.exec_params(
-            Sql_methods::INSERT + " INTO clients(name, surname, email) VALUES ($1, $2, $3) RETURNING id;",
-            client.name, client.surname, client.email);
-    if (!res.empty()) {
-        int client_id = res[0][0].as<int>();
-        trn.exec_params(Sql_methods::INSERT + " INTO phones(client_id, phone) VALUES ($1, $2);", client_id,
-                        phone);
-        trn.commit();
-    } else {
-        trn.abort();
-        throw SQLexception(__LINE__, "Failed to add client", __FILE_NAME__);
-    }
-}
 
-void DB_controller::add_phone(const std::string &name, const std::string &phone) const {
-    pqxx::transaction trn(*cx);
-    pqxx::result res = trn.exec_params("SELECT id, surname FROM clients WHERE name = $1;", name);
-    if (!res.empty()) {
-        trn.exec_params("UPDATE phones SET phone = $1;", phone);
-        trn.commit();
-    } else {
-        trn.abort();
-        throw SQLexception(__LINE__, "Client not found with name: " + name, __FILE_NAME__);
-    }
-}
+    try {
+        pqxx::row doc_row = trn.exec_params1(
+                "INSERT INTO documents (file_path, file_name) "
+                "VALUES ($1, $2, $3) "
+                "RETURNING id;",
+                dir_path, file_name
+        );
 
-void
-DB_controller::update_client(const std::string &email, const std::string &newName, const std::string &newSurname,
-                             const std::string &newEmail) const {
-    pqxx::transaction trn(*cx);
-    pqxx::result res = trn.exec_params("SELECT id FROM clients WHERE email = $1;", email);
-    if (!res.empty()) {
-        int client_id = res[0][0].as<int>();
-        trn.exec_params(R"(UPDATE clients SET name = $1, surname = $2, email = $3 WHERE id = $4;)", newName, newSurname,
-                        newEmail, client_id);
-        trn.commit();
-    } else {
-        trn.abort();
-        throw SQLexception(__LINE__, "Client not found with new name: " + newName, __FILE_NAME__);
-    }
-}
+        auto doc_id = doc_row[0].as<std::int64_t>();
 
-void DB_controller::remove_phone(const std::string &email, const std::string &phone) const {
-    using namespace libio::database;
-    pqxx::transaction trn(*cx);
-    pqxx::result res = trn.exec_params("SELECT id, name, surname FROM clients WHERE email = $1;", email);
-    if (!res.empty()) {
-        int client_id = res[0][0].as<int>();
-        trn.exec_params(Sql_methods::DELETE + " FROM phones WHERE client_id = $1 AND phone = $2;", client_id, phone);
-        trn.commit();
-        auto client_name = res[0][1].as<std::string>();
-        auto client_surname = res[0][2].as<std::string>();
-    } else {
-        trn.abort();
-        throw SQLexception(__LINE__, "Client not found with email: " + email, __FILE_NAME__);
-    }
-}
+        cx->prepare("upsert_word_and_link",
+                    "WITH w AS ( "
+                    "  INSERT INTO words (word) VALUES ($1) "
+                    "  ON CONFLICT (word) DO UPDATE SET word = EXCLUDED.word "
+                    "  RETURNING id "
+                    ") "
+                    "INSERT INTO document_words (document_id, word_id, frequency) "
+                    "VALUES ($2, (SELECT id FROM w), $3) "
+                    "ON CONFLICT (document_id, word_id) DO UPDATE SET frequency = EXCLUDED.frequency;"
+        );
 
-void DB_controller::remove_client(const std::string &email) const {
-    using namespace libio::database;
-    pqxx::transaction trn(*cx);
-    pqxx::result res = trn.exec_params("SELECT id, name, surname FROM clients WHERE email = $1;", email);
-    if (!res.empty()) {
-        int client_id = res[0][0].as<int>();
-        auto client_name = res[0][1].as<std::string>();
-        auto client_surname = res[0][2].as<std::string>();
-        trn.exec_params(Sql_methods::DELETE + " FROM phones WHERE client_id = $1;", client_id);
-        trn.exec_params(Sql_methods::DELETE + " FROM clients WHERE id = $1;", client_id);
-        trn.commit();
-    } else {
-        trn.abort();
-        throw SQLexception(__LINE__, "Client not found with email: " + email, __FILE_NAME__);
-    }
-}
-
-void DB_controller::select_all() const {
-    using namespace libio::database;
-    pqxx::transaction trn(*cx);
-
-    pqxx::result tables = trn.exec(
-            Sql_methods::SELECT + " table_name FROM information_schema.tables WHERE table_schema='public';");
-
-    for (const auto &table_row: tables) {
-        auto table_name = table_row[0].as<std::string>();
-
-        std::string query = "SELECT * FROM " + table_name;
-        pqxx::result data = trn.exec(query);
-
-        libio::output::println("Table: " + table_name);
-        for (const auto &row: data) {
-            for (const auto &field: row) {
-                libio::output::print(field.c_str(), " ");
+        for (const auto &[word, frequency]: document_data) {
+            if (word.empty()) {
+                continue;
             }
-            libio::output::println();
-        }
-    }
-}
 
-DB_controller::DB_controller(DB_controller &&other) noexcept {
-    cx = std::move(other.cx);
-    host = std::move(other.host);
-    port = std::move(other.port);
-    db_name = std::move(other.db_name);
-    user_name = std::move(other.user_name);
-    password = std::move(other.password);
-    other.cx = nullptr;
+            trn.exec_prepared("upsert_word_and_link", word, doc_id, frequency);
+        }
+
+        trn.commit();
+    }
+    catch (const pqxx::sql_error &e) {
+        trn.abort();
+        throw SQLexception(__LINE__, "Failed to add Document data", __FILE_NAME__);
+    }
+    catch (const std::exception &e) {
+        trn.abort();
+        throw SQLexception(__LINE__, "Failed to add Document data", __FILE_NAME__);
+    }
 }
 
 //Controller builder class:

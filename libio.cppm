@@ -944,20 +944,20 @@ export namespace database {
      * Methods of sql execution
      */
     struct Sql_methods {
-        static libio::String SELECT;
-        static libio::String DELETE;
-        static libio::String UPDATE;
-        static libio::String INSERT;
-        static libio::String CREATE;
-        static libio::String DROP;
+        static std::string SELECT;
+        static std::string DELETE;
+        static std::string UPDATE;
+        static std::string INSERT;
+        static std::string CREATE;
+        static std::string DROP;
     };
 
-    libio::String Sql_methods::SELECT = "SELECT";
-    libio::String Sql_methods::DELETE = "DELETE";
-    libio::String Sql_methods::UPDATE = "UPDATE";
-    libio::String Sql_methods::INSERT = "INSERT";
-    libio::String Sql_methods::CREATE = "CREATE";
-    libio::String Sql_methods::DROP = "DROP";
+    std::string Sql_methods::SELECT = "SELECT";
+    std::string Sql_methods::DELETE = "DELETE";
+    std::string Sql_methods::UPDATE = "UPDATE";
+    std::string Sql_methods::INSERT = "INSERT";
+    std::string Sql_methods::CREATE = "CREATE";
+    std::string Sql_methods::DROP = "DROP";
 
     enum DATABASE_TYPE {
         //

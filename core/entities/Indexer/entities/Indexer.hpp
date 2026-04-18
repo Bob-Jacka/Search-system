@@ -22,11 +22,7 @@ class Indexer {
 
         std::string valid_patter;
 
-        std::vector<std::string> index_dir(const filesys::path &path);
-
-        void save_results_2_db();
-
-        void init_db_structure();
+        void index_dir(const filesys::path &path);
 
     public:
         Indexer() = delete;
