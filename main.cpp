@@ -18,14 +18,17 @@ int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 
     DB_controller_builder builder;
-    builder.set_db_name(ini_parser->get_value<std::string>("bd_name"))
-            .set_host(ini_parser->get_value<std::string>("host"))
-            .set_user(ini_parser->get_value<std::string>("username"))
-            .set_password(ini_parser->get_value<std::string>("password"))
-            .set_port(ini_parser->get_value<std::string>("port"));
+    ini_parser = std::make_unique<Ini_parser>("/home/kirill/Downloads/Search-system/cmake-build-debug/settings.ini");
+
+    builder.set_db_name(ini_parser->get_value<std::string>("Database.bd_name"))
+            .set_host(ini_parser->get_value<std::string>("Database.host"))
+            .set_user(ini_parser->get_value<std::string>("Database.username"))
+            .set_password(ini_parser->get_value<std::string>("Database.password"))
+            .set_port(ini_parser->get_value<std::string>("Database.port"));
 
     ini_parser = std::make_unique<Ini_parser>(libio::file::get_current_dir_name("settings.ini"));
     db_controller = std::make_unique<DB_controller>(builder.build());
+
     db_controller->init_tables();
 
     //UI block:
@@ -54,7 +57,7 @@ int main(int argc, char *argv[]) {
         } else {
 
             //Get results from database
-//            auto results_to_view = db_controller->find_words(split_search_query);
+            auto results_to_view = db_controller->find_words(split_search_query);
 
             auto output_model = std::make_unique<QStandardItemModel>(3, 2);
             output_model->setItem(0, 0, new QStandardItem("Tom"));

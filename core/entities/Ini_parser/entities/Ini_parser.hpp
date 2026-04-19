@@ -3,7 +3,6 @@
 
 #include <string>
 #include <vector>
-
 #include <map>
 
 import Libio;
@@ -16,7 +15,7 @@ constexpr auto comment_start = ';';
 template<typename T>
 concept concept_ini_guard = requires(T)
 {
-    libio::type_constrains::is_string_v <T>;
+    std::is_same_v<T, std::string>;
 };
 
 /**
@@ -26,7 +25,7 @@ concept concept_ini_guard = requires(T)
 class Ini_parser {
     using Sections_t = std::map<std::string, std::map<std::string, std::string> >;
 
-    Sections_t sections;
+    Sections_t m_sections;
 
     static Sections_t parse_ini_from_vector(const std::vector<std::string> &);
 
@@ -54,7 +53,6 @@ public:
     [[nodiscard]] int get_section_count() const;
 };
 
-
 /**
  * Get value from section object
  * @tparam T generic param
@@ -64,10 +62,10 @@ public:
 template<typename T>
 requires concept_ini_guard<T>
 T Ini_parser::get_value(const std::string &section_param) const {
-    if (libio::string::str_contains(section_param, ".")) {
+    if (section_param.contains(".")) {
         const auto split_line = libio::string::split(section_param,
-                                                     "."); //0 - name of the section and 1 - name of the value
-        for (const auto &section: sections) {
+                                                     '.'); //0 - name of the section and 1 - name of the value
+        for (const auto &section: m_sections) {
             //key is section name, value is section
             if (split_line[0] == section.first) {
                 try {
@@ -82,7 +80,7 @@ T Ini_parser::get_value(const std::string &section_param) const {
             }
         }
         //mistype hint
-        for (const auto &[fst, snd]: sections.at(split_line[0])) {
+        for (const auto &[fst, snd]: m_sections.at(split_line[0])) {
             libio::output::println("  " + fst + "=" + snd);
         }
         libio::output::println();
@@ -90,7 +88,6 @@ T Ini_parser::get_value(const std::string &section_param) const {
         printf("Exception on line: %s - %s in file %s", __LINE__,
                "No value, but maybe you mistyped, upper you will see some values from section", __FILE_NAME__);
     }
-    printf("Exception on line: %s - %s in file %s", __LINE__, "Unknown section name", __FILE_NAME__);
 }
 
 /**
@@ -103,10 +100,10 @@ T Ini_parser::get_value(const std::string &section_param) const {
 template<typename T>
 requires concept_ini_guard<T>
 T Ini_parser::get_value_or(const std::string &section_param, const T &default_value) const {
-    if (libio::string::str_contains(section_param, ".")) {
+    if (section_param.contains(".")) {
         const auto split_line = libio::string::split(section_param,
                                                      "."); //0 - name of the section and 1 - name of the value
-        for (const auto &section: sections) {
+        for (const auto &section: m_sections) {
             //key is section name, value is section
             if (split_line[0] == section.first) {
                 try {

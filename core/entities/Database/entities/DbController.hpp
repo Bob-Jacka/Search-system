@@ -1,16 +1,12 @@
 #ifndef NETOLIBPQ_DBCONTROLLER_HPP
 #define NETOLIBPQ_DBCONTROLLER_HPP
 
-#include <memory>
-#include <string>
 #include <vector>
-#include <qt6/QtCore/QList>
-#include <qt6/QtCore/QStringList>
+#include <QList>
+#include <QStringList>
 #include "../../Model/entities/SearchHit.hpp"
 
 #include <pqxx/pqxx>
-
-import Libio;
 
 /**
  * aka txt file
@@ -57,6 +53,10 @@ private:
     DB_controller controller;
 
 public:
+    DB_controller_builder() = default;
+
+    ~DB_controller_builder() = default;
+
     DB_controller_builder &set_host(const std::string &);
 
     DB_controller_builder &set_port(const std::string &);

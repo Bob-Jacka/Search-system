@@ -13,26 +13,29 @@ DB_controller::DB_controller(DB_controller &&other) noexcept {
     other.cx = nullptr;
     try {
         std::string builder_strings;
-        builder_strings += "host= " + db_name + "\n";
-        builder_strings += "port= " + port + "\n";
-        builder_strings += "dbname= " + db_name + "\n";
-        builder_strings += "user= " + user_name + "\n";
-        builder_strings += "password= " + password;
+        builder_strings += "host=" + db_name + " ";
+        builder_strings += "port=" + port + " ";
+        builder_strings += "dbname=" + db_name + " ";
+        builder_strings += "user=" + user_name + " ";
+        builder_strings += "password=" + password;
 
         cx = std::make_unique<pqxx::connection>(
-                builder_strings
+                builder_strings.c_str()
         );
-    } catch (...) {
+    }
+    catch (pqxx::sql_error &e) {
+        //
+    }
+    catch (...) {
         throw SQLexception(__LINE__, "Error in auth postgres user", __FILE_NAME__);
     }
 }
 
 void DB_controller::init_tables() {
-    using namespace libio::database;
     try {
         pqxx::transaction trn(*cx);
 
-        trn.exec(Sql_methods::CREATE + R"( TABLE IF NOT EXISTS Documents (
+        trn.exec(std::string("CREATE") + R"( TABLE IF NOT EXISTS Documents (
             id BIGSERIAL PRIMARY KEY,
             file_path TEXT NOT NULL UNIQUE,
             file_name TEXT NOT NULL,
@@ -64,8 +67,13 @@ void DB_controller::init_tables() {
 
 QList<SearchHit> DB_controller::find_words(const QStringList &query_words) const {
     QList<SearchHit> results;
+    std::vector<std::string> unique_words;
+    unique_words.reserve(query_words.size());
 
-    std::vector<std::string> unique_words = query_words;
+    for (const QString &qstr: query_words) {
+        unique_words.push_back(qstr.toUtf8().toStdString());
+    }
+
     std::sort(unique_words.begin(), unique_words.end());
     unique_words.erase(std::unique(unique_words.begin(), unique_words.end()), unique_words.end());
 
@@ -106,9 +114,8 @@ QList<SearchHit> DB_controller::find_words(const QStringList &query_words) const
 }
 
 void DB_controller::drop_tables() const {
-    using namespace libio::database;
     pqxx::transaction trn(*cx);
-    trn.exec(Sql_methods::DROP + " TABLE IF EXISTS Documents, Words, DocumentWords;");
+    trn.exec(std::string("DROP") + " TABLE IF EXISTS Documents, Words, DocumentWords;");
     trn.commit();
 }
 
@@ -157,6 +164,10 @@ void DB_controller::add_document(const std::unordered_map<std::string, int> &doc
         trn.abort();
         throw SQLexception(__LINE__, "Failed to add Document data", __FILE_NAME__);
     }
+}
+
+DB_controller::DB_controller() {
+    this->cx = nullptr;
 }
 
 //Controller builder class:

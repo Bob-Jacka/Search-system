@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.31)
 project(Ini)
 
 add_library(Ini
@@ -7,3 +7,5 @@ add_library(Ini
 
         data/Constants.hpp
 )
+
+target_link_libraries(Ini Libio)

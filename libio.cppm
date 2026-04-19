@@ -17,6 +17,7 @@ module;
  In your cmake file
 */
 
+#include <string>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -399,9 +400,9 @@ export namespace string {
     std::vector<std::string> split(const std::string &s, const std::string &delim = " ") {
         std::vector<std::string> result;
         const std::regex del(delim);
-        std::sregex_token_iterator it(s.begin(),
-                                      s.end(), del, -1);
+        std::sregex_token_iterator it(s.begin(), s.end(), del, -1);
         const std::sregex_token_iterator end;
+
         while (it != end) {
             result.push_back(*it);
             ++it;
@@ -412,8 +413,8 @@ export namespace string {
     /**
      * Split method for char delimeter
      * @param str source string
-     * @param delimiter
-     * @return
+     * @param delimiter split string by delimeter
+     * @return vector with split string
      */
     std::vector<std::string> split(const std::string &str, const char delimiter) {
         std::vector<std::string> result;
@@ -815,7 +816,7 @@ export namespace file {
      * @param fileName name of the file.
      * @return vector with lines.
      */
-    inline std::vector<std::string> read_file(const std::string &fileName) {
+    std::vector<std::string> read_file(const std::string &fileName) {
         auto lines = std::vector<std::string>();
         if (std::ifstream file(fileName); file.is_open()) {
             std::string line;

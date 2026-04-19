@@ -1,20 +1,21 @@
 #include "Ini_parser.hpp"
 
+
 Ini_parser::Ini_parser(const std::string &filename) {
     const std::vector<std::string> lines = libio::file::read_file(filename);
-    this->sections = parse_ini_from_vector(lines);
+    this->m_sections = parse_ini_from_vector(lines);
 }
 
 Ini_parser::Ini_parser(const std::vector<std::string> &lines) {
-    this->sections = parse_ini_from_vector(lines);
+    this->m_sections = parse_ini_from_vector(lines);
 }
 
 Ini_parser::Sections_t Ini_parser::get_sections() const {
-    return this->sections;
+    return this->m_sections;
 }
 
 int Ini_parser::get_section_count() const {
-    return this->sections.size();
+    return this->m_sections.size();
 }
 
 Ini_parser::Sections_t Ini_parser::parse_ini_from_vector(const std::vector<std::string> &lines) {
