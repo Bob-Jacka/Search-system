@@ -1,19 +1,14 @@
 #ifndef SEARCH_SYSTEM_INDEXER_HPP
 #define SEARCH_SYSTEM_INDEXER_HPP
 
-#include <algorithm>
-//#include <execution>
 #include <filesystem>
 #include <string>
 #include <unordered_map>
+#include "../../Database/entities/DbController.hpp"
 
 import Libio;
 
 namespace filesys = std::filesystem;
-
-class DB_controller;
-
-class Ini_parser;
 
 class Indexer {
 private:

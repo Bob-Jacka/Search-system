@@ -43,7 +43,7 @@ add_executable(Search_system
 )
 
 if (WIN32)
-    #TODO change path in windows
+    #TODO change path in windows system
     add_subdirectory(C:/path/to/libpqxx libpqxx-build)
 endif ()
 

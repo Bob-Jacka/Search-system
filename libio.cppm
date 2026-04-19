@@ -818,19 +818,22 @@ export namespace file {
      */
     std::vector<std::string> read_file(const std::string &fileName) {
         auto lines = std::vector<std::string>();
-        if (std::ifstream file(fileName); file.is_open()) {
-            std::string line;
-            while (std::getline(file, line)) {
-                lines.emplace_back(line);
+        try {
+            if (std::ifstream file(fileName); file.is_open()) {
+                std::string line;
+                while (std::getline(file, line)) {
+                    lines.emplace_back(line);
+                }
+                file.close();
+                return lines;
             }
-            file.close();
-            return lines;
-        }
+        } catch (...) {
 #ifdef LIBIO_ERROR
-        throw std::runtime_error("Error reading file: " + fileName);
+            throw std::runtime_error("Error reading file: " + fileName);
 #else
-        std::cerr << "Error reading file: " << fileName << std::endl;
+            std::cerr << "Error reading file: " << fileName << std::endl;
 #endif
+        }
         return {};
     }
 

@@ -2,6 +2,7 @@
 #include "core/entities/Database/entities/DbController.hpp"
 #include "core/entities/Ini_parser/entities/Ini_parser.hpp"
 #include "core/entities/Indexer/entities/Indexer.hpp"
+#include "core/entities/Model/entities/Search_hit_model.hpp"
 #include <QMessageBox>
 #include <future>
 #include <QListWidget>
@@ -29,7 +30,8 @@ int main(int argc, char *argv[]) {
     ini_parser = std::make_unique<Ini_parser>(libio::file::get_current_dir_name("settings.ini"));
     db_controller = std::make_unique<DB_controller>(builder.build());
 
-    db_controller->init_tables();
+    db_controller->drop_tables(); //drop existing tables
+    db_controller->init_tables(); //and then init them
 
     //UI block:
     const auto main_window = std::make_unique<Ui::MainWindow>();
@@ -59,19 +61,18 @@ int main(int argc, char *argv[]) {
             //Get results from database
             auto results_to_view = db_controller->find_words(split_search_query);
 
-            auto output_model = std::make_unique<QStandardItemModel>(3, 2);
-            output_model->setItem(0, 0, new QStandardItem("Tom"));
-            output_model->setItem(1, 0, new QStandardItem("Bob"));
-            output_model->setItem(2, 0, new QStandardItem("Sam"));
+//            auto output_model = std::make_unique<SearchHitModel>(3, 2);
+//            output_model->setItem(0, 0, new QStandardItem("Tom"));
+//            output_model->setItem(1, 0, new QStandardItem("Bob"));
+//            output_model->setItem(2, 0, new QStandardItem("Sam"));
 
-            txt_view->setModel(output_model.get());
+//            txt_view->setModel(output_model.get());
             indexer->process_dir(search_txt_field->toPlainText().toStdString());
             txt_view->update();
         }
     });
 
     if (main_container_win) {
-        db_controller->drop_tables(); //drop existing tables
         main_container_win->show();
     }
 

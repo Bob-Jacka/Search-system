@@ -19,7 +19,6 @@ public:
 
     explicit SearchHitModel(QObject *parent = nullptr) : QAbstractListModel(parent) {}
 
-    // Количество строк
     int rowCount(const QModelIndex &parent = QModelIndex()) const override {
         if (parent.isValid()) {
             return 0;

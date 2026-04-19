@@ -1,12 +1,10 @@
 #ifndef NETOLIBPQ_DBCONTROLLER_HPP
 #define NETOLIBPQ_DBCONTROLLER_HPP
 
-#include <vector>
 #include <QList>
-#include <QStringList>
-#include "../../Model/entities/SearchHit.hpp"
 
 #include <pqxx/pqxx>
+#include "../../Model/entities/SearchHit.hpp"
 
 /**
  * aka txt file
@@ -45,7 +43,7 @@ public:
                       const std::string &dir_path,
                       const std::string &file_name) const; ///add document into database
 
-    [[nodiscard]] QList<SearchHit> find_words(const QStringList &query_words) const;
+    [[nodiscard]] QList<SearchHit> find_words(const QList<QString> &query_words) const;
 };
 
 class DB_controller_builder {

@@ -13,19 +13,18 @@ DB_controller::DB_controller(DB_controller &&other) noexcept {
     other.cx = nullptr;
     try {
         std::string builder_strings;
-        builder_strings += "host=" + db_name + " ";
+        builder_strings += "host=" + host + " ";
         builder_strings += "port=" + port + " ";
         builder_strings += "dbname=" + db_name + " ";
         builder_strings += "user=" + user_name + " ";
         builder_strings += "password=" + password;
 
-        cx = std::make_unique<pqxx::connection>(
-                builder_strings.c_str()
-        );
+        cx = std::make_unique<pqxx::connection>(builder_strings.c_str());
     }
-    catch (pqxx::sql_error &e) {
-        //
+    catch (pqxx::broken_connection &e) {
+        throw SQLexception(__LINE__, std::string("Cannot init db: ") + e.what(), __FILE_NAME__);
     }
+
     catch (...) {
         throw SQLexception(__LINE__, "Error in auth postgres user", __FILE_NAME__);
     }
@@ -96,18 +95,18 @@ QList<SearchHit> DB_controller::find_words(const QStringList &query_words) const
         );
 
         for (const auto &row: res) {
-            results.push_back({
-                                      .file_name = row["file_name"].as<std::string>(),
-                                      .file_path = row["file_path"].as<std::string>(),
-                                      .total_score = row["score"].as<int>()
-                              });
+            SearchHit hit;
+            hit.file_name = row["file_name"].as<std::string>();
+            hit.file_path = row["file_path"].as<std::string>();
+            hit.total_score = row["score"].as<int>();
+            results.push_back(hit);
         }
     }
     catch (const pqxx::sql_error &e) {
         throw SQLexception(__LINE__, "Failed to search words", __FILE_NAME__);
     }
-    catch (const std::exception &e) {
-        throw SQLexception(__LINE__, "Failed to search words", __FILE_NAME__);
+    catch (...) {
+        throw SQLexception(__LINE__, "Exception in find words", __FILE_NAME__);
     }
 
     return results;
