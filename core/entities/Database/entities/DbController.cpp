@@ -59,7 +59,11 @@ void DB_controller::init_tables() {
         );
     )");
         trn.commit();
-    } catch (...) {
+    }
+    catch (pqxx::broken_connection &e) {
+        throw SQLexception(__LINE__, std::string("Cannot init db: ") + e.what(), __FILE_NAME__);
+    }
+    catch (...) {
         throw SQLexception(__LINE__, "Error in initializing tables", __FILE_NAME__);
     }
 }
