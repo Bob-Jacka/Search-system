@@ -16,7 +16,7 @@ private:
 
     DB_controller *controller;
 
-    std::string valid_patter;
+    std::vector<std::string> valid_patter;
 
     void index_dir(const filesys::path &path);
 

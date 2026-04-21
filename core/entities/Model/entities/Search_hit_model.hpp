@@ -10,7 +10,7 @@ class SearchHitModel : public QAbstractListModel {
 Q_OBJECT
 
 public:
-    enum Roles {
+    enum class Roles {
         FileNameRole = Qt::UserRole + 1,
         FilePathRole,
         ScoreRole,
@@ -19,14 +19,14 @@ public:
 
     explicit SearchHitModel(QObject *parent = nullptr) : QAbstractListModel(parent) {}
 
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override {
+    [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override {
         if (parent.isValid()) {
             return 0;
         }
         return m_hits.size();
     }
 
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override {
+    [[nodiscard]] QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override {
         if (!index.isValid() || index.row() >= m_hits.size()) {
             return QVariant();
         }

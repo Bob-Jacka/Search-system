@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 
     DB_controller_builder builder;
-    ini_parser = std::make_unique<Ini_parser>("/home/kirill/Downloads/Search-system/cmake-build-debug/settings.ini");
+    ini_parser = std::make_unique<Ini_parser>(libio::file::get_current_dir_name("settings.ini"));
 
     builder.set_db_name(ini_parser->get_value<std::string>("Database.bd_name"))
             .set_host(ini_parser->get_value<std::string>("Database.host"))
@@ -27,8 +27,8 @@ int main(int argc, char *argv[]) {
             .set_password(ini_parser->get_value<std::string>("Database.password"))
             .set_port(ini_parser->get_value<std::string>("Database.port"));
 
-    ini_parser = std::make_unique<Ini_parser>(libio::file::get_current_dir_name("settings.ini"));
     db_controller = std::make_unique<DB_controller>(builder.build());
+    indexer = std::make_unique<Indexer>(db_controller.get(), ini_parser->get_value<std::string>("Settings.extensions"));
 
     db_controller->drop_tables(); //drop existing tables
     db_controller->init_tables(); //and then init them
@@ -45,6 +45,11 @@ int main(int argc, char *argv[]) {
     auto txt_view = main_container_win->findChild<QListView *>("results");
     auto model = std::make_unique<QStringListModel>();
 
+    auto task = std::async( std::launch::async, []() { //TODO can be a problem
+        indexer->process_dir(search_txt_field->toPlainText().toStdString())
+    });
+    task.get();
+
     QPushButton::connect(search_btn, &QPushButton::clicked, [&search_txt_field, txt_view, &model] {
         auto txt = search_txt_field->toPlainText();
         auto split_search_query = txt.split(' '); //split search query by space symbol
@@ -54,20 +59,14 @@ int main(int argc, char *argv[]) {
             return;
         }
         if (txt.isEmpty()) {
-            QMessageBox(QMessageBox::Icon::Warning, "Warning", "There is not text to search").exec();
+            QMessageBox(QMessageBox::Icon::Warning, "Warning", "There is no text to search").exec();
             return;
         } else {
-
             //Get results from database
             auto results_to_view = db_controller->find_words(split_search_query);
 
-//            auto output_model = std::make_unique<SearchHitModel>(3, 2);
-//            output_model->setItem(0, 0, new QStandardItem("Tom"));
-//            output_model->setItem(1, 0, new QStandardItem("Bob"));
-//            output_model->setItem(2, 0, new QStandardItem("Sam"));
-
-//            txt_view->setModel(output_model.get());
-            indexer->process_dir(search_txt_field->toPlainText().toStdString());
+            auto output_model = std::make_unique<SearchHitModel>();
+            output_model.setHits(results_to_view);
             txt_view->update();
         }
     });
