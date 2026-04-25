@@ -34,7 +34,7 @@ void DB_controller::init_tables() {
     try {
         pqxx::transaction trn(*cx);
 
-        trn.exec(std::string("CREATE") + R"( TABLE IF NOT EXISTS Documents (
+        trn.exec(R"(CREATE TABLE IF NOT EXISTS Documents (
             id BIGSERIAL PRIMARY KEY,
             file_path TEXT NOT NULL UNIQUE,
             file_name TEXT NOT NULL
@@ -118,7 +118,7 @@ QList<SearchHit> DB_controller::find_words(const QStringList &query_words) const
 
 void DB_controller::drop_tables() const {
     pqxx::transaction trn(*cx);
-    trn.exec(std::string("DROP") + " TABLE IF EXISTS Documents, Words, DocumentWords;");
+    trn.exec("DROP TABLE IF EXISTS Documents, Words, DocumentWords;");
     trn.commit();
 }
 

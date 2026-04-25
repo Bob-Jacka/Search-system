@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
+#include <mutex>
 #include "../../Database/entities/DbController.hpp"
 
 import Libio;
@@ -12,24 +13,25 @@ namespace filesys = std::filesystem;
 
 class Indexer {
 private:
-    std::vector<std::string> result = std::vector<std::string>();
-
     DB_controller *controller;
-
     std::vector<std::string> valid_pattern;
+    std::mutex db_mutex;
 
-    void index_dir(const filesys::path &path) noexcept;
+    void collect_files(const filesys::path &path, std::vector<std::pair<filesys::path, std::string>> &files);
+
+    void process_file(const filesys::path &file_path, const std::string &file_name);
+
+    static std::unordered_map<std::string, int> count_freq(const std::vector<std::string> &words);
 
 public:
+
     Indexer() = delete;
 
     Indexer(DB_controller *, const std::string &pattern);
 
     ~Indexer() = default;
 
-    static std::unordered_map<std::string, int> count_freq(const std::vector<std::string> &words);
-
-    void process_dir(const std::string &start_point); ///main entry point to indexer
+    void process_dir(const std::string &start_point);
 };
 
 #endif

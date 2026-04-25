@@ -20,8 +20,8 @@ int main(int argc, char *argv[]) {
     ini_parser = std::make_unique<Ini_parser>(libio::file::get_current_dir_name("settings.ini"));
 
     if (ini_parser->get_section_count() == 0) {
-        libio::output::println("Use path for ini file: " + libio::file::get_current_dir_name("settings.ini"));
-        libio::output::println("Ini parser is not initialized correctly, maybe path to ini file is corrupted");
+        QMessageBox(QMessageBox::Icon::Critical, "Error",
+                    "Ini parser is not initialized correctly, maybe path to ini file is corrupted").exec();
         return 1;
     }
 
@@ -37,44 +37,43 @@ int main(int argc, char *argv[]) {
     db_controller->init_tables(); //and then init them
 
     //UI block:
-    const auto main_window = std::make_unique<Ui::MainWindow>();
-    auto main_container_win = std::make_unique<QMainWindow>();
+    auto *main_window = new Ui_MainWindow();
 
-    main_window->setupUi(main_container_win.get());
+    main_window->setupUi();
+    main_window->setAttribute(Qt::WA_DeleteOnClose);
 
     //Window entities:
-    auto search_btn = main_container_win->findChild<QPushButton *>("search_btn");
-    auto search_txt_field = main_container_win->findChild<QTextEdit *>("to_search");
-    auto txt_view = main_container_win->findChild<QListView *>("results");
-    auto model = std::make_unique<SearchHitModel>();
+    auto search_btn = main_window->findChild<QPushButton *>("search_btn");
+    auto search_txt_field = main_window->findChild<QTextEdit *>("to_search");
+    auto txt_view = main_window->findChild<QListView *>("results");
+    auto *model = new SearchHitModel(main_window);
+    txt_view->setModel(model);
 
-    QPushButton::connect(search_btn, &QPushButton::clicked, [&search_txt_field, txt_view, &model] {
+    QPushButton::connect(search_btn, &QPushButton::clicked, [search_txt_field, model] {
         auto txt = search_txt_field->toPlainText();
-        auto split_search_query = txt.split(' '); //split search query by space symbol
+        auto split_search_query = txt.split(' ');
 
         if (split_search_query.size() > 4) {
             QMessageBox(QMessageBox::Icon::Warning, "Warning", "Cannot search more than 4 words").exec();
             return;
         }
+
         if (txt.isEmpty()) {
             QMessageBox(QMessageBox::Icon::Warning, "Warning", "There is no text to search").exec();
             return;
-        } else {
-            //Get results from database
-            auto results_to_view = db_controller->find_words(split_search_query);
-
-            txt_view->setModel(model.get());
-            model->setHits(results_to_view);
         }
+
+        auto results_to_view = db_controller->find_words(split_search_query);
+        model->setHits(results_to_view);
     });
 
-    if (main_container_win) {
-        auto task = std::async(std::launch::async, []() {
-            indexer->process_dir(ini_parser->get_value<std::string>("Settings.start_path"));
-        });
-        task.get();
-        main_container_win->show();
-    }
+    auto task = std::async(std::launch::async, []() {
+        indexer->process_dir(ini_parser->get_value<std::string>("Settings.start_path"));
+    });
+    task.get();
+    main_window->show();
 
     return QApplication::exec();
 }
+
+#include "main.moc"

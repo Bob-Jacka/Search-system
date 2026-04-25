@@ -21,10 +21,30 @@
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
+#include <QtWidgets/QMessageBox>
+#include <QCloseEvent>
 
 QT_BEGIN_NAMESPACE
 
-class Ui_MainWindow {
+class Ui_MainWindow : public QMainWindow {
+Q_OBJECT
+
+protected:
+    void closeEvent(QCloseEvent *event) override {
+        QMessageBox::StandardButton resBtn = QMessageBox::question(this,
+                                                                   "Подтверждение выхода",
+                                                                   "Вы действительно хотите закрыть приложение?",
+                                                                   QMessageBox::No | QMessageBox::Yes,
+                                                                   QMessageBox::No);
+
+        if (resBtn != QMessageBox::Yes) {
+            event->ignore();
+        } else {
+            clearenv();
+            event->accept();
+        }
+    }
+
 public:
     QWidget *centralwidget;
     QWidget *verticalLayoutWidget_3;
@@ -40,13 +60,18 @@ public:
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
-    void setupUi(QMainWindow *MainWindow) {
-        if (MainWindow->objectName().isEmpty()) {
-            MainWindow->setObjectName("MainWindow");
+    Ui_MainWindow(QWidget *parent = nullptr) : QMainWindow(parent) {
+    }
+
+    ~Ui_MainWindow() = default;
+
+    void setupUi() {
+        if (this->objectName().isEmpty()) {
+            this->setObjectName("Search system");
         }
-        MainWindow->resize(800, 600);
-        MainWindow->setFixedSize(800, 600); //do not resize window
-        centralwidget = new QWidget(MainWindow);
+        this->resize(800, 600);
+        this->setFixedSize(800, 600); //do not resize window
+        centralwidget = new QWidget(this);
         centralwidget->setObjectName("centralwidget");
         verticalLayoutWidget_3 = new QWidget(centralwidget);
         verticalLayoutWidget_3->setObjectName("verticalLayoutWidget_3");
@@ -63,6 +88,7 @@ public:
         search_bar->setContentsMargins(-1, -1, -1, 0);
         action_bar = new QHBoxLayout();
         action_bar->setObjectName("action_bar");
+        action_bar->setSpacing(20);
         search_btn = new QPushButton(verticalLayoutWidget_3);
         search_btn->setObjectName("search_btn");
 
@@ -86,7 +112,6 @@ public:
 
         search_bar->addWidget(to_search);
 
-
         verticalLayout_3->addLayout(search_bar);
 
         search_results = new QVBoxLayout();
@@ -101,35 +126,29 @@ public:
 
         search_results->addWidget(results);
 
-
         verticalLayout_3->addLayout(search_results);
 
-        MainWindow->setCentralWidget(centralwidget);
-        menubar = new QMenuBar(MainWindow);
+        this->setCentralWidget(centralwidget);
+        menubar = new QMenuBar(this);
         menubar->setObjectName("menubar");
         menubar->setGeometry(QRect(0, 0, 800, 23));
-        MainWindow->setMenuBar(menubar);
-        statusbar = new QStatusBar(MainWindow);
+        this->setMenuBar(menubar);
+        statusbar = new QStatusBar(this);
         statusbar->setObjectName("statusbar");
-        MainWindow->setStatusBar(statusbar);
+        this->setStatusBar(statusbar);
 
-        retranslateUi(MainWindow);
+        retranslateUi();
 
-        QMetaObject::connectSlotsByName(MainWindow);
+        QMetaObject::connectSlotsByName(this);
     } // setupUi
 
-    void retranslateUi(QMainWindow *MainWindow) {
-        MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
+    void retranslateUi() {
+        this->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
         search_btn->setText(QCoreApplication::translate("MainWindow", "Search", nullptr));
         select_txt->setText(QCoreApplication::translate("MainWindow", "Enter text to search above", nullptr));
         label_3->setText(QCoreApplication::translate("MainWindow", "Search results:", nullptr));
     } // retranslateUi
 };
-
-namespace Ui {
-    class MainWindow : public Ui_MainWindow {
-    };
-} // namespace Ui
 
 QT_END_NAMESPACE
 
