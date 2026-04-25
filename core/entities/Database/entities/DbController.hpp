@@ -41,9 +41,9 @@ public:
 
     void add_document(const std::unordered_map<std::string, int> &document_data,
                       const std::string &dir_path,
-                      const std::string &file_name) const; ///add document into database
+                      const std::string &file_name) const noexcept(false); ///add document into database
 
-    [[nodiscard]] QList<SearchHit> find_words(const QList<QString> &query_words) const;
+    [[nodiscard]] QList<SearchHit> find_words(const QList<QString> &query_words) const noexcept;
 };
 
 class DB_controller_builder {

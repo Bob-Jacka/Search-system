@@ -1,5 +1,5 @@
+#include <QMessageBox>
 #include "DbController.hpp"
-#include "SQLexception.hpp"
 
 ///////////////////////DB_controller
 
@@ -22,11 +22,11 @@ DB_controller::DB_controller(DB_controller &&other) noexcept {
         cx = std::make_unique<pqxx::connection>(builder_strings.c_str());
     }
     catch (pqxx::broken_connection &e) {
-        throw SQLexception(__LINE__, std::string("Cannot init db: ") + e.what(), __FILE_NAME__);
+        QMessageBox(QMessageBox::Icon::Critical, "Error", e.what()).exec();
     }
 
     catch (...) {
-        throw SQLexception(__LINE__, "Error in auth postgres user", __FILE_NAME__);
+        QMessageBox(QMessageBox::Icon::Critical, "Error", "Error in auth postgres user").exec();
     }
 }
 
@@ -37,7 +37,7 @@ void DB_controller::init_tables() {
         trn.exec(std::string("CREATE") + R"( TABLE IF NOT EXISTS Documents (
             id BIGSERIAL PRIMARY KEY,
             file_path TEXT NOT NULL UNIQUE,
-            file_name TEXT NOT NULL,
+            file_name TEXT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS Words (
@@ -46,7 +46,7 @@ void DB_controller::init_tables() {
         );
 
         CREATE TABLE IF NOT EXISTS DocumentWords (
-            document_id BIGINT NOT NULL,,
+            document_id BIGINT NOT NULL,
             word_id BIGINT NOT NULL,
             frequency INTEGER NOT NULL,
 
@@ -54,21 +54,21 @@ void DB_controller::init_tables() {
 
             CHECK (frequency > 0),
 
-            FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
-            FOREIGN KEY (word_id) REFERENCES words(id) ON DELETE CASCADE
+            FOREIGN KEY (document_id) REFERENCES Documents(id) ON DELETE CASCADE,
+            FOREIGN KEY (word_id) REFERENCES Words(id) ON DELETE CASCADE
         );
     )");
         trn.commit();
     }
     catch (pqxx::broken_connection &e) {
-        throw SQLexception(__LINE__, std::string("Cannot init db: ") + e.what(), __FILE_NAME__);
+        QMessageBox(QMessageBox::Icon::Warning, "Warning", e.what()).exec();
     }
     catch (...) {
-        throw SQLexception(__LINE__, "Error in initializing tables", __FILE_NAME__);
+        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Error in initializing tables").exec();
     }
 }
 
-QList<SearchHit> DB_controller::find_words(const QStringList &query_words) const {
+QList<SearchHit> DB_controller::find_words(const QStringList &query_words) const noexcept {
     QList<SearchHit> results;
     std::vector<std::string> unique_words;
     unique_words.reserve(query_words.size());
@@ -89,9 +89,9 @@ QList<SearchHit> DB_controller::find_words(const QStringList &query_words) const
     try {
         pqxx::result res = trn.exec_params(
                 "SELECT d.file_name, d.file_path, SUM(dw.frequency) AS score "
-                "FROM documents d "
-                "JOIN document_words dw ON d.id = dw.document_id "
-                "JOIN words w ON dw.word_id = w.id "
+                "FROM Documents d "
+                "JOIN DocumentWords dw ON d.id = dw.document_id "
+                "JOIN Words w ON dw.word_id = w.id "
                 "WHERE w.word = ANY($1) "
                 "GROUP BY d.id, d.file_name, d.file_path "
                 "ORDER BY score DESC;",
@@ -107,10 +107,10 @@ QList<SearchHit> DB_controller::find_words(const QStringList &query_words) const
         }
     }
     catch (const pqxx::sql_error &e) {
-        throw SQLexception(__LINE__, "Failed to search words", __FILE_NAME__);
+        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Failed to search words").exec();
     }
     catch (...) {
-        throw SQLexception(__LINE__, "Exception in find words", __FILE_NAME__);
+        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Exception in find words").exec();
     }
 
     return results;
@@ -122,32 +122,42 @@ void DB_controller::drop_tables() const {
     trn.commit();
 }
 
+/**
+ * Add document into postgresql database
+ * @param document_data
+ * @param dir_path
+ * @param file_name
+ */
 void DB_controller::add_document(const std::unordered_map<std::string, int> &document_data,
                                  const std::string &dir_path,
-                                 const std::string &file_name) const {
+                                 const std::string &file_name) const noexcept(false) {
+    static bool prepared;
     pqxx::work trn(*cx);
     cx->set_client_encoding("UTF8");
 
     try {
+        if (!prepared) {
+            cx->prepare("upsert_word_and_link",
+                        "WITH w AS ( "
+                        "  INSERT INTO Words (word) VALUES ($1) "
+                        "  ON CONFLICT (word) DO UPDATE SET word = EXCLUDED.word "
+                        "  RETURNING id "
+                        ") "
+                        "INSERT INTO DocumentWords (document_id, word_id, frequency) "
+                        "VALUES ($2, (SELECT id FROM w), $3) "
+                        "ON CONFLICT (document_id, word_id) DO UPDATE SET frequency = EXCLUDED.frequency;"
+            );
+            prepared = true;
+        }
+
         pqxx::row doc_row = trn.exec_params1(
-                "INSERT INTO documents (file_path, file_name) "
-                "VALUES ($1, $2, $3) "
+                "INSERT INTO Documents (file_path, file_name) "
+                "VALUES ($1, $2) "
                 "RETURNING id;",
                 dir_path, file_name
         );
 
         auto doc_id = doc_row[0].as<std::int64_t>();
-
-        cx->prepare("upsert_word_and_link",
-                    "WITH w AS ( "
-                    "  INSERT INTO words (word) VALUES ($1) "
-                    "  ON CONFLICT (word) DO UPDATE SET word = EXCLUDED.word "
-                    "  RETURNING id "
-                    ") "
-                    "INSERT INTO document_words (document_id, word_id, frequency) "
-                    "VALUES ($2, (SELECT id FROM w), $3) "
-                    "ON CONFLICT (document_id, word_id) DO UPDATE SET frequency = EXCLUDED.frequency;"
-        );
 
         for (const auto &[word, frequency]: document_data) {
             if (word.empty()) {
@@ -156,16 +166,22 @@ void DB_controller::add_document(const std::unordered_map<std::string, int> &doc
 
             trn.exec_prepared("upsert_word_and_link", word, doc_id, frequency);
         }
-
         trn.commit();
     }
     catch (const pqxx::sql_error &e) {
         trn.abort();
-        throw SQLexception(__LINE__, "Failed to add Document data", __FILE_NAME__);
+        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Failed to add Document data").exec();
+        return;
     }
     catch (const std::exception &e) {
         trn.abort();
-        throw SQLexception(__LINE__, "Failed to add Document data", __FILE_NAME__);
+        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Failed to add Document data").exec();
+        return;
+    }
+    catch (...) {
+        trn.abort();
+        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Massive error in add document").exec();
+        return;
     }
 }
 

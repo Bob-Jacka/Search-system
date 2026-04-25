@@ -16,9 +16,9 @@ private:
 
     DB_controller *controller;
 
-    std::vector<std::string> valid_patter;
+    std::vector<std::string> valid_pattern;
 
-    void index_dir(const filesys::path &path);
+    void index_dir(const filesys::path &path) noexcept;
 
 public:
     Indexer() = delete;

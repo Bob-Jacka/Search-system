@@ -6,8 +6,6 @@
 #include <QMessageBox>
 #include <future>
 #include <QListWidget>
-#include <QStandardItemModel>
-#include <QStringListModel>
 
 import Libio;
 
@@ -21,6 +19,12 @@ int main(int argc, char *argv[]) {
     DB_controller_builder builder;
     ini_parser = std::make_unique<Ini_parser>(libio::file::get_current_dir_name("settings.ini"));
 
+    if (ini_parser->get_section_count() == 0) {
+        libio::output::println("Use path for ini file: " + libio::file::get_current_dir_name("settings.ini"));
+        libio::output::println("Ini parser is not initialized correctly, maybe path to ini file is corrupted");
+        return 1;
+    }
+
     builder.set_db_name(ini_parser->get_value<std::string>("Database.bd_name"))
             .set_host(ini_parser->get_value<std::string>("Database.host"))
             .set_user(ini_parser->get_value<std::string>("Database.username"))
@@ -28,9 +32,8 @@ int main(int argc, char *argv[]) {
             .set_port(ini_parser->get_value<std::string>("Database.port"));
 
     db_controller = std::make_unique<DB_controller>(builder.build());
-    indexer = std::make_unique<Indexer>(db_controller.get(), ini_parser->get_value<std::string>("Settings.extensions"));
-
     db_controller->drop_tables(); //drop existing tables
+    indexer = std::make_unique<Indexer>(db_controller.get(), ini_parser->get_value<std::string>("Settings.extensions"));
     db_controller->init_tables(); //and then init them
 
     //UI block:
@@ -43,12 +46,7 @@ int main(int argc, char *argv[]) {
     auto search_btn = main_container_win->findChild<QPushButton *>("search_btn");
     auto search_txt_field = main_container_win->findChild<QTextEdit *>("to_search");
     auto txt_view = main_container_win->findChild<QListView *>("results");
-    auto model = std::make_unique<QStringListModel>();
-
-    auto task = std::async( std::launch::async, []() { //TODO can be a problem
-        indexer->process_dir(search_txt_field->toPlainText().toStdString())
-    });
-    task.get();
+    auto model = std::make_unique<SearchHitModel>();
 
     QPushButton::connect(search_btn, &QPushButton::clicked, [&search_txt_field, txt_view, &model] {
         auto txt = search_txt_field->toPlainText();
@@ -65,13 +63,16 @@ int main(int argc, char *argv[]) {
             //Get results from database
             auto results_to_view = db_controller->find_words(split_search_query);
 
-            auto output_model = std::make_unique<SearchHitModel>();
-            output_model.setHits(results_to_view);
-            txt_view->update();
+            txt_view->setModel(model.get());
+            model->setHits(results_to_view);
         }
     });
 
     if (main_container_win) {
+        auto task = std::async(std::launch::async, []() {
+            indexer->process_dir(ini_parser->get_value<std::string>("Settings.start_path"));
+        });
+        task.get();
         main_container_win->show();
     }
 

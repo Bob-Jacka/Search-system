@@ -1,5 +1,6 @@
 #include "Indexer.hpp"
 #include <algorithm>
+#include <QMessageBox>
 
 /**
  * Entry point to indexer program
@@ -20,34 +21,43 @@ void Indexer::process_dir(const std::string &start_point) {
  * @param path path to directory
  * @return vector with processed strings
  */
-void Indexer::index_dir(const filesys::path &path) {
-    for (const auto &entry: filesys::directory_iterator(path)) {
-        const auto &dir_path  = entry.path();
-        const auto  file_name = dir_path.filename();
-        if (filesys::is_directory(path)) {
-            index_dir(dir_path);
-        } else if (filesys::is_regular_file(dir_path)) {
-            if (std::any_of(valid_patter.begin(), valid_patter.end(), [&file_name](const auto &pattern) { file_name == pattern; })) {
-                auto file_txt = libio::file::read_file(dir_path.string());
+void Indexer::index_dir(const filesys::path &path) noexcept {
+    try {
+        for (const auto &entry: filesys::directory_iterator(path)) {
+            const auto &dir_path = entry.path();
+            const auto file_name = dir_path.filename();
+            const auto ext = dir_path.extension().string();
 
-                result.clear();
+            if (filesys::is_directory(dir_path)) {
+                index_dir(dir_path);
+            } else if (filesys::is_regular_file(dir_path)) {
+                if (std::ranges::any_of(valid_pattern, [&ext](const std::string &pattern) -> bool {
+                    return ext == "." + pattern; //some kind of trick, add dot to compare with extension
+                })) {
+                    std::string content = libio::file::read_file2(dir_path.string());
 
-                //clear strings:
-                std::ranges::for_each(file_txt,
-                                      libio::string::delete_whitespaces);
+                    //delete punctuation
+                    std::ranges::transform(content, content.begin(), [](char c) {
+                        return std::ispunct(c) || c == '\n' ? ' ' : c;
+                    });
 
-                //to lower case:
-                std::ranges::transform(file_txt.begin(), file_txt.end(), std::back_inserter(result),
-                                       [](const auto &to_low_str) {
-                                           return libio::string::change_string_register(to_low_str, true);
-                                       });
+                    //to lower case
+                    content = libio::string::change_string_register(content, true);
 
-                auto freq = count_freq(result);
-                controller->add_document(freq, dir_path, file_name);
-            } else {
-                continue;
+                    //split
+                    auto words = libio::string::split(content, ' ');
+
+                    //Delete empty
+                    std::erase_if(words, [](const std::string &w) { return w.empty(); });
+
+                    auto freq = count_freq(words);
+                    controller->add_document(freq, dir_path.string(), file_name.string());
+                }
             }
         }
+    } catch (...) {
+        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Failed to Index files").exec();
+        return;
     }
 }
 
@@ -60,6 +70,6 @@ std::unordered_map<std::string, int> Indexer::count_freq(const std::vector<std::
 }
 
 Indexer::Indexer(DB_controller *db, const std::string &pattern) {
-    controller   = db;
-    valid_patter = libio::string::split(pattern, ';');
+    controller = db;
+    valid_pattern = libio::string::split(pattern, ',');
 }

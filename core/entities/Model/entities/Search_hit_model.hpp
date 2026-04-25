@@ -10,13 +10,6 @@ class SearchHitModel : public QAbstractListModel {
 Q_OBJECT
 
 public:
-    enum class Roles {
-        FileNameRole = Qt::UserRole + 1,
-        FilePathRole,
-        ScoreRole,
-        DisplayRole
-    };
-
     explicit SearchHitModel(QObject *parent = nullptr) : QAbstractListModel(parent) {}
 
     [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override {
@@ -28,31 +21,27 @@ public:
 
     [[nodiscard]] QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override {
         if (!index.isValid() || index.row() >= m_hits.size()) {
-            return QVariant();
+            return {};
         }
-
         const SearchHit &hit = m_hits[index.row()];
 
-        switch (role) {
-            case FileNameRole:
-                return QString::fromStdString(hit.file_name);
-            case FilePathRole:
-                return QString::fromStdString(hit.file_path);
-            case ScoreRole:
-                return hit.total_score;
-            case DisplayRole:
-                return QString("%1 [hits: %2]")
-                        .arg(QString::fromStdString(hit.file_name))
-                        .arg(hit.total_score);
-            default:
-                return QVariant();
+        if (role == Qt::DisplayRole) {
+            return QString("Filename: '%1', hits: '%2' in path '%3'")
+                    .arg(QString::fromStdString(hit.file_name))
+                    .arg(hit.total_score)
+                    .arg(hit.file_path);
         }
+        return {};
     }
 
+    /**
+     * Set model hits with data
+     * @param hits hits object
+     */
     void setHits(const QList<SearchHit> &hits) {
-        beginResetModel();
+        beginInsertRows(QModelIndex(), hits.size(), hits.size());
         m_hits = hits;
-        endResetModel();
+        endInsertRows();
     }
 
     void clear() {

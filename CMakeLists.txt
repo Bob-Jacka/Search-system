@@ -26,7 +26,6 @@ add_executable(Search_system
 
         core/entities/Database/entities/DbController.cpp
         core/entities/Database/entities/DbController.hpp
-        core/entities/Database/entities/SQLexception.hpp
 
         core/entities/Ini_parser/entities/Ini_parser.cpp
         core/entities/Ini_parser/entities/Ini_parser.hpp
