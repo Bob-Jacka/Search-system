@@ -145,7 +145,7 @@ public:
     void retranslateUi() {
         this->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
         search_btn->setText(QCoreApplication::translate("MainWindow", "Search", nullptr));
-        select_txt->setText(QCoreApplication::translate("MainWindow", "Enter text to search above", nullptr));
+        select_txt->setText(QCoreApplication::translate("MainWindow", "Enter text to search below", nullptr));
         label_3->setText(QCoreApplication::translate("MainWindow", "Search results:", nullptr));
     } // retranslateUi
 };

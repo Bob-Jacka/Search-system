@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.31)
 project(Search_system)
 
-add_compile_options(-Wall -Wextra)
+add_compile_options(-g -Wall -Wextra)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_AUTOMOC ON)

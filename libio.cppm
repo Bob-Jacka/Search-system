@@ -191,7 +191,7 @@ export namespace output {
 #ifdef LIBIO_ERROR
         throw std::runtime_error("Print is failed due to cout");
 #else
-        std::cerr << "Print is failed due to cout" << std::endl;
+//        std::cerr << "Print is failed due to cout" << std::endl;
 #endif
     }
 
@@ -600,14 +600,17 @@ export namespace input {
      */
     template<typename T>
     void user_input(T &variableAddress) {
-        if (std::cin.good()) {
-            std::cin >> variableAddress;
-        }
+        try {
+            if (std::cin.good()) {
+                std::cin >> variableAddress;
+            }
+        } catch (...) {
 #ifdef LIBIO_ERROR
-        throw std::runtime_error("split_by_first_delim: delimiter not found");
+            throw std::runtime_error("user_input: Cin is not good");
 #else
-        std::cerr << "split_by_first_delim: delimiter not found" << std::endl;
+            std::cerr << "user_input: Cin is not good" << std::endl;
 #endif
+        }
     }
 
     /**
