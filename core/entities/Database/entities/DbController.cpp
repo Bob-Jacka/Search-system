@@ -1,52 +1,6 @@
 #include "DbController.hpp"
 
-#include <QMessageBox>
-
 DB_controller::~DB_controller() = default;
-
-DB_controller::DB_controller(DB_controller &&other) noexcept
-        : cx(std::move(other.cx)),
-          prepared(other.prepared),
-          host(std::move(other.host)),
-          port(std::move(other.port)),
-          db_name(std::move(other.db_name)),
-          user_name(std::move(other.user_name)),
-          password(std::move(other.password)) {
-}
-
-DB_controller &DB_controller::operator=(DB_controller &&other) noexcept {
-    if (this != &other) {
-        cx = std::move(other.cx);
-        prepared = other.prepared;
-        host = std::move(other.host);
-        port = std::move(other.port);
-        db_name = std::move(other.db_name);
-        user_name = std::move(other.user_name);
-        password = std::move(other.password);
-    }
-    return *this;
-}
-
-void DB_controller::connect() {
-    std::string builder_strings;
-    builder_strings += "host=" + host + " ";
-    builder_strings += "port=" + port + " ";
-    builder_strings += "dbname=" + db_name + " ";
-    builder_strings += "user=" + user_name + " ";
-    builder_strings += "password=" + password;
-
-    try {
-        cx = std::make_unique<pqxx::connection>(builder_strings.c_str());
-    }
-    catch (const pqxx::broken_connection &e) {
-        QMessageBox(QMessageBox::Icon::Critical, "Error", e.what()).exec();
-        return;
-    }
-    catch (...) {
-        QMessageBox(QMessageBox::Icon::Critical, "Error", "Unknown DB error").exec();
-        return;
-    }
-}
 
 void DB_controller::init_tables() {
     try {
@@ -79,63 +33,11 @@ void DB_controller::init_tables() {
         trn.commit();
     }
     catch (pqxx::broken_connection &e) {
-        QMessageBox(QMessageBox::Icon::Warning, "Warning", e.what()).exec();
         return;
     }
     catch (...) {
-        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Error in initializing tables").exec();
         return;
     }
-}
-
-QList<SearchHit> DB_controller::find_words(const QList<QString> &query_words) const noexcept {
-    QList<SearchHit> results;
-    std::vector<std::string> unique_words;
-    unique_words.reserve(query_words.size());
-
-    for (const QString &qstr: query_words) {
-        unique_words.push_back(qstr.toUtf8().toStdString());
-    }
-
-    std::sort(unique_words.begin(), unique_words.end());
-    unique_words.erase(std::unique(unique_words.begin(), unique_words.end()), unique_words.end());
-
-    if (unique_words.empty()) {
-        return results;
-    }
-
-    pqxx::nontransaction trn(*cx);
-
-    try {
-        pqxx::result res = trn.exec_params(
-                "SELECT d.file_name, d.file_path, SUM(dw.frequency) AS score "
-                "FROM Documents d "
-                "JOIN DocumentWords dw ON d.id = dw.document_id "
-                "JOIN Words w ON dw.word_id = w.id "
-                "WHERE w.word = ANY($1) "
-                "GROUP BY d.id, d.file_name, d.file_path "
-                "ORDER BY score DESC;",
-                unique_words
-        );
-
-        for (const auto &row: res) {
-            SearchHit hit;
-            hit.file_name = row["file_name"].as<std::string>();
-            hit.file_path = row["file_path"].as<std::string>();
-            hit.total_score = row["score"].as<int>();
-            results.push_back(hit);
-        }
-    }
-    catch (const pqxx::sql_error &e) {
-        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Failed to search words").exec();
-        return {};
-    }
-    catch (...) {
-        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Exception in find words").exec();
-        return {};
-    }
-
-    return results;
 }
 
 /**
@@ -244,50 +146,32 @@ void DB_controller::add_document(const std::unordered_map<std::string, int> &doc
     }
     catch (const pqxx::sql_error &e) {
         trn.abort();
-        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Failed to add Document data").exec();
         return;
     }
     catch (const std::exception &e) {
         trn.abort();
-        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Failed to add Document data").exec();
         return;
     }
     catch (...) {
         trn.abort();
-        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Massive error in add document").exec();
         return;
     }
 }
 
-//Controller builder class:
-DB_controller_builder &DB_controller_builder::set_host(const std::string &host_str) {
-    to_build.host = host_str;
-    return *this;
-}
+DB_controller::DB_controller(const std::string &host, const std::string &port, const std::string &db_name,
+                             const std::string &user_name, const std::string &password) {
 
-DB_controller_builder &DB_controller_builder::set_port(const std::string &port_str) {
-    to_build.port = port_str;
-    return *this;
-}
+    std::string builder_strings;
+    builder_strings += "host=" + host + " ";
+    builder_strings += "port=" + port + " ";
+    builder_strings += "dbname=" + db_name + " ";
+    builder_strings += "user=" + user_name + " ";
+    builder_strings += "password=" + password;
 
-DB_controller_builder &DB_controller_builder::set_db_name(const std::string &db_name_str) {
-    to_build.db_name = db_name_str;
-    return *this;
-}
-
-DB_controller_builder &DB_controller_builder::set_user(const std::string &user_str) {
-    to_build.user_name = user_str;
-    return *this;
-}
-
-DB_controller_builder &DB_controller_builder::set_password(const std::string &password_str) {
-    to_build.password = password_str;
-    return *this;
-}
-
-DB_controller DB_controller_builder::build() {
-    DB_controller result = std::move(to_build);
-    result.connect();
-    to_build = DB_controller{};
-    return result;
+    try {
+        cx = std::make_unique<pqxx::connection>(builder_strings.c_str());
+    }
+    catch (const pqxx::broken_connection &e) {
+        return;
+    }
 }

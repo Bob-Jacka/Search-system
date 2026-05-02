@@ -1,6 +1,6 @@
 #include "Indexer.hpp"
 #include <algorithm>
-#include <QMessageBox>
+#include "../../Database/entities/DbController.hpp"
 
 void Indexer::collect_files(const std::filesystem::path &path,
                             std::vector<std::pair<std::filesystem::path, std::string>> &files) {
@@ -20,7 +20,6 @@ void Indexer::collect_files(const std::filesystem::path &path,
             }
         }
     } catch (...) {
-        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Failed to Collect files").exec();
         return;
     }
 }
@@ -49,7 +48,6 @@ void Indexer::process_file(const std::filesystem::path &file_path, const std::st
         std::lock_guard<std::mutex> lock(db_mutex);
         controller->add_document(freq, file_path.string(), file_name);
     } catch (...) {
-        QMessageBox(QMessageBox::Icon::Warning, "Warning", "Failed to Process files").exec();
         return;
     }
 }

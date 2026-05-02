@@ -4,21 +4,6 @@ project(Search_system)
 add_compile_options(-g -Wall -Wextra)
 
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-#add_compile_options(-fsanitize=address -g)
-#add_link_options(-fsanitize=address)
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
-set(CMAKE_DEFAULT_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
-
-message("Available configs: ${CMAKE_CONFIGURATION_TYPES}")
-message("Default config: ${CMAKE_DEFAULT_BUILD_TYPE}")
-find_package(Qt6 COMPONENTS
-        Core
-        Widgets
-        REQUIRED
-)
 
 add_executable(Search_system
         main.cpp
@@ -33,12 +18,7 @@ add_executable(Search_system
         core/entities/Ini_parser/entities/Ini_parser.hpp
         core/entities/Ini_parser/data/Constants.hpp
 
-        core/entities/UI/entities/Search_hit_model.cpp
-        core/entities/UI/entities/Search_hit_model.hpp
         core/entities/UI/entities/SearchHit.hpp
-
-        core/entities/UI/Interface.cpp
-        core/entities/UI/Interface.hpp
 
         libio.cppm
 )
@@ -50,8 +30,6 @@ endif ()
 
 target_link_libraries(Search_system
         PRIVATE
-        Qt6::Core
-        Qt6::Widgets
         pqxx
 )
 
