@@ -29,7 +29,7 @@ void Indexer::process_file(const filesys::path &file_path, const std::string &fi
         std::string content = libio::file::read_file2(file_path.string());
 
         //delete punctuation
-        std::ranges::transform(content, content.begin(), [](char c) {
+        std::ranges::transform(content, content.begin(), [](unsigned char c) -> unsigned char {
             return std::ispunct(c) || c == '\n' ? ' ' : c;
         });
 
@@ -83,7 +83,7 @@ std::unordered_map<std::string, int> Indexer::count_freq(const std::vector<std::
     return freq_res;
 }
 
-Indexer::Indexer(DB_controller *db, const std::string &pattern) {
+Indexer::Indexer(DB_controller* db, const std::string &pattern) {
     controller = db;
     valid_pattern = libio::string::split(pattern, ',');
 }

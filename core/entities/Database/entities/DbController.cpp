@@ -1,65 +1,52 @@
-#include <QMessageBox>
 #include "DbController.hpp"
+#include <QMessageBox>
+#include <pqxx/pqxx>
 
-///////////////////////DB_controller
+DB_controller::~DB_controller() = default;
 
-DB_controller::DB_controller(DB_controller &&other) noexcept {
-    cx = std::move(other.cx);
-    host = std::move(other.host);
-    port = std::move(other.port);
-    db_name = std::move(other.db_name);
-    user_name = std::move(other.user_name);
-    password = std::move(other.password);
-    other.cx = nullptr;
-    try {
-        std::string builder_strings;
-        builder_strings += "host=" + host + " ";
-        builder_strings += "port=" + port + " ";
-        builder_strings += "dbname=" + db_name + " ";
-        builder_strings += "user=" + user_name + " ";
-        builder_strings += "password=" + password;
-
-        cx = std::make_unique<pqxx::connection>(builder_strings.c_str());
-    }
-    catch (pqxx::broken_connection &e) {
-        QMessageBox(QMessageBox::Icon::Critical, "Error", e.what()).exec();
-    }
-
-    catch (...) {
-        QMessageBox(QMessageBox::Icon::Critical, "Error", "Error in auth postgres user").exec();
-    }
+DB_controller::DB_controller(DB_controller &&other) noexcept
+        :
+        cx(std::move(other.cx)),
+        prepared(other.prepared),
+        host(std::move(other.host)),
+        port(std::move(other.port)),
+        db_name(std::move(other.db_name)),
+        user_name(std::move(other.user_name)),
+        password(std::move(other.password)) {
 }
 
 DB_controller &DB_controller::operator=(DB_controller &&other) noexcept {
-    if (this == &other) {
-        return *this;
-    }
-
-    cx = std::move(other.cx);
-    host = std::move(other.host);
-    port = std::move(other.port);
-    db_name = std::move(other.db_name);
-    user_name = std::move(other.user_name);
-    password = std::move(other.password);
-    other.cx = nullptr;
-
-    try {
-        std::string builder_strings;
-        builder_strings += "host=" + host + " ";
-        builder_strings += "port=" + port + " ";
-        builder_strings += "dbname=" + db_name + " ";
-        builder_strings += "user=" + user_name + " ";
-        builder_strings += "password=" + password;
-
-        cx = std::make_unique<pqxx::connection>(builder_strings.c_str());
-    }
-    catch (pqxx::broken_connection &e) {
-        QMessageBox(QMessageBox::Icon::Critical, "Error", e.what()).exec();
-    }
-    catch (...) {
-        QMessageBox(QMessageBox::Icon::Critical, "Error", "Error in auth postgres user").exec();
+    if (this != &other) {
+//        cx = std::move(other.cx);
+        prepared = other.prepared;
+        host = std::move(other.host);
+        port = std::move(other.port);
+        db_name = std::move(other.db_name);
+        user_name = std::move(other.user_name);
+        password = std::move(other.password);
     }
     return *this;
+}
+
+void DB_controller::connect() {
+    std::string builder_strings;
+    builder_strings += "host=" + host + " ";
+    builder_strings += "port=" + port + " ";
+    builder_strings += "dbname=" + db_name + " ";
+    builder_strings += "user=" + user_name + " ";
+    builder_strings += "password=" + password;
+
+    try {
+        cx = std::make_unique<pqxx::connection>(builder_strings.c_str());
+    }
+    catch (const pqxx::broken_connection &e) {
+        QMessageBox(QMessageBox::Icon::Critical, "Error", e.what()).exec();
+        throw;
+    }
+    catch (...) {
+        QMessageBox(QMessageBox::Icon::Critical, "Error", "Unknown DB error").exec();
+        throw;
+    }
 }
 
 void DB_controller::init_tables() {
@@ -100,7 +87,7 @@ void DB_controller::init_tables() {
     }
 }
 
-QList<SearchHit> DB_controller::find_words(const QStringList &query_words) const noexcept {
+QList<SearchHit> DB_controller::find_words(const QList<QString> &query_words) const noexcept {
     QList<SearchHit> results;
     std::vector<std::string> unique_words;
     unique_words.reserve(query_words.size());
@@ -269,10 +256,6 @@ void DB_controller::add_document(const std::unordered_map<std::string, int> &doc
     }
 }
 
-DB_controller::DB_controller() {
-    this->cx = nullptr;
-}
-
 //Controller builder class:
 DB_controller_builder &DB_controller_builder::set_host(const std::string &host_str) {
     to_build.host = host_str;
@@ -300,5 +283,8 @@ DB_controller_builder &DB_controller_builder::set_password(const std::string &pa
 }
 
 DB_controller DB_controller_builder::build() {
-    return std::move(this->to_build);
+    DB_controller result = std::move(to_build);
+    result.connect();
+    to_build = DB_controller{};
+    return result;
 }

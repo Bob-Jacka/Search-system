@@ -26,52 +26,29 @@
 
 QT_BEGIN_NAMESPACE
 
-class Ui_MainWindow : public QMainWindow {
-Q_OBJECT
-
-protected:
-    void closeEvent(QCloseEvent *event) override {
-        QMessageBox::StandardButton resBtn = QMessageBox::question(this,
-                                                                   "Подтверждение выхода",
-                                                                   "Вы действительно хотите закрыть приложение?",
-                                                                   QMessageBox::No | QMessageBox::Yes,
-                                                                   QMessageBox::No);
-
-        if (resBtn != QMessageBox::Yes) {
-            event->ignore();
-        } else {
-            clearenv();
-            event->accept();
-        }
-    }
-
+class Ui_MainWindow {
 public:
-    QWidget *centralwidget;
-    QWidget *verticalLayoutWidget_3;
-    QVBoxLayout *verticalLayout_3;
-    QVBoxLayout *search_bar;
-    QHBoxLayout *action_bar;
-    QPushButton *search_btn;
-    QLabel *select_txt;
-    QTextEdit *to_search;
-    QVBoxLayout *search_results;
-    QLabel *label_3;
-    QListView *results;
-    QMenuBar *menubar;
-    QStatusBar *statusbar;
+    QWidget *centralwidget{};
+    QWidget *verticalLayoutWidget_3{};
+    QVBoxLayout *verticalLayout_3{};
+    QVBoxLayout *search_bar{};
+    QHBoxLayout *action_bar{};
+    QPushButton *search_btn{};
+    QLabel *select_txt{};
+    QTextEdit *to_search{};
+    QVBoxLayout *search_results{};
+    QLabel *label_3{};
+    QListView *results{};
+    QMenuBar *menubar{};
+    QStatusBar *statusbar{};
 
-    Ui_MainWindow(QWidget *parent = nullptr) : QMainWindow(parent) {
-    }
-
-    ~Ui_MainWindow() = default;
-
-    void setupUi() {
-        if (this->objectName().isEmpty()) {
-            this->setObjectName("Search system");
+    void setupUi(QMainWindow *main_window) {
+        if (main_window) {
+            main_window->setObjectName("Search system");
         }
-        this->resize(800, 600);
-        this->setFixedSize(800, 600); //do not resize window
-        centralwidget = new QWidget(this);
+        main_window->resize(800, 600);
+        main_window->setFixedSize(800, 600); //do not resize window
+        centralwidget = new QWidget(main_window);
         centralwidget->setObjectName("centralwidget");
         verticalLayoutWidget_3 = new QWidget(centralwidget);
         verticalLayoutWidget_3->setObjectName("verticalLayoutWidget_3");
@@ -128,28 +105,34 @@ public:
 
         verticalLayout_3->addLayout(search_results);
 
-        this->setCentralWidget(centralwidget);
-        menubar = new QMenuBar(this);
+        main_window->setCentralWidget(centralwidget);
+        menubar = new QMenuBar(main_window);
         menubar->setObjectName("menubar");
         menubar->setGeometry(QRect(0, 0, 800, 23));
-        this->setMenuBar(menubar);
-        statusbar = new QStatusBar(this);
+        main_window->setMenuBar(menubar);
+        statusbar = new QStatusBar(main_window);
         statusbar->setObjectName("statusbar");
-        this->setStatusBar(statusbar);
+        main_window->setStatusBar(statusbar);
 
-        retranslateUi();
+        retranslateUi(main_window);
 
-        QMetaObject::connectSlotsByName(this);
+        QMetaObject::connectSlotsByName(main_window);
     } // setupUi
 
-    void retranslateUi() {
-        this->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
+    void retranslateUi(QMainWindow *main_window) const {
+        main_window->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
         search_btn->setText(QCoreApplication::translate("MainWindow", "Search", nullptr));
         select_txt->setText(QCoreApplication::translate("MainWindow", "Enter text to search below", nullptr));
         label_3->setText(QCoreApplication::translate("MainWindow", "Search results:", nullptr));
     } // retranslateUi
 };
 
+namespace Ui {
+    class MainWindow : public Ui_MainWindow {
+
+    };
+}
+
 QT_END_NAMESPACE
 
-#endif // SEARCH_SYSTEMLSJOZM_H
+#endif

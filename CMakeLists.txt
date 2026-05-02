@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
 set(CMAKE_DEFAULT_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
 
@@ -31,9 +32,9 @@ add_executable(Search_system
         core/entities/Ini_parser/entities/Ini_parser.hpp
         core/entities/Ini_parser/data/Constants.hpp
 
-        core/entities/Model/entities/Search_hit_model.cpp
-        core/entities/Model/entities/Search_hit_model.hpp
-        core/entities/Model/entities/SearchHit.hpp
+        core/entities/UI/entities/Search_hit_model.cpp
+        core/entities/UI/entities/Search_hit_model.hpp
+        core/entities/UI/entities/SearchHit.hpp
 
         core/entities/UI/Interface.cpp
         core/entities/UI/Interface.hpp

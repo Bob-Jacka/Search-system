@@ -1,7 +1,6 @@
 #ifndef SEARCH_SYSTEM_INDEXER_HPP
 #define SEARCH_SYSTEM_INDEXER_HPP
 
-#include <filesystem>
 #include <string>
 #include <unordered_map>
 #include <mutex>

@@ -6,7 +6,7 @@
 struct SearchHit {
     std::string file_name;
     std::string file_path;
-    int total_score;
+    int total_score{};
 
     SearchHit() = default;
     SearchHit(std::string name, std::string path, int score)

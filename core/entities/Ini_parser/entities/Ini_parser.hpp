@@ -50,7 +50,7 @@ public:
 
     [[nodiscard]] Sections_t get_sections() const;
 
-    [[nodiscard]] int get_section_count() const;
+    [[nodiscard]] unsigned long get_section_count() const;
 };
 
 /**
@@ -70,12 +70,15 @@ T Ini_parser::get_value(const std::string &section_param) const {
             if (split_line[0] == section.first) {
                 try {
                     if (section.second.contains(split_line[1])) {
-                        auto to_return = libio::convert::convert_to_t<T>(section.second.at(split_line[1]));
+                        T to_return = libio::convert::convert_to_t<T>(section.second.at(split_line[1]));
+                        if (libio::string::str_contains(to_return, '"') and to_return.size() > 2) {
+                            to_return = libio::string::replace_string_all(to_return, "\"", "");
+                        }
                         return to_return;
                     }
                 } catch (const std::exception &e) {
-//                    printf("Exception on line: %s - %s in file %s", __LINE__,
-//                           "Error retrieving value: " + std::string(e.what()), __FILE_NAME__);
+                    printf("Exception on line: %s - %s in file %s", __LINE__,
+                           "Error retrieving value: " + std::string(e.what()), __FILE_NAME__);
                 }
             }
         }
@@ -84,10 +87,9 @@ T Ini_parser::get_value(const std::string &section_param) const {
             libio::output::println("  " + fst + "=" + snd);
         }
         libio::output::println();
-
-        printf("Exception on line: %s - %s in file %s", __LINE__,
-               "No value, but maybe you mistyped, upper you will see some values from section", __FILE_NAME__);
     }
+    printf("Exception on line: %s - %s in file %s", __LINE__,
+           "No value, but maybe you mistyped, upper you will see some values from section", __FILE_NAME__);
 }
 
 /**

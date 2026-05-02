@@ -4,14 +4,17 @@
 #include <QList>
 
 #include <pqxx/pqxx>
-#include "../../Model/entities/SearchHit.hpp"
+#include <string>
+#include <unordered_map>
+#include <QString>
+#include "../../UI/entities/SearchHit.hpp"
 
 class DB_controller {
 private:
     std::unique_ptr<pqxx::connection> cx; //one connection to rule the world
     bool prepared = false;
 
-    DB_controller();
+    DB_controller() = default;
 
     std::string host;
     std::string port;
@@ -20,7 +23,7 @@ private:
     std::string password;
 
 public:
-    ~DB_controller() = default;
+    ~DB_controller();
 
     DB_controller(DB_controller &&) noexcept;
 
@@ -28,14 +31,17 @@ public:
 
     DB_controller &operator=(DB_controller &&other) noexcept;
 
+    void connect();
+
     friend class DB_controller_builder;
 
     void init_tables();
 
     void drop_tables() const;
 
-    void add_document(const std::unordered_map<std::string, int> &document_data, const std::string &dir_path,
-                      const std::string &file_name) noexcept(false); ///add document into database
+    void add_document(const std::unordered_map<std::string, int> &document_data,
+                      const std::string &dir_path,
+                      const std::string &file_name) noexcept(false);
 
     [[nodiscard]] QList<SearchHit> find_words(const QList<QString> &query_words) const noexcept;
 

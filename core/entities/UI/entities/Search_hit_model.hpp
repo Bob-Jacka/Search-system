@@ -12,7 +12,7 @@ Q_OBJECT
 public:
     explicit SearchHitModel(QObject *parent = nullptr) : QAbstractListModel(parent) {}
 
-    [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override {
+    [[nodiscard]] int rowCount(const QModelIndex &parent) const override {
         if (parent.isValid()) {
             return 0;
         }

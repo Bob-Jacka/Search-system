@@ -525,10 +525,10 @@ export namespace string {
     /**
      * Compiler independent realization of string contains function
      * @param source_str which string to check
-     * @param dest which string to find in source
+     * @param dest which char symbol to find to find in source
      * @return bool value of existence
      */
-    bool str_contains(const std::string &source_str, const std::string &dest) {
+    bool str_contains(const std::string &source_str, char dest) {
         if (source_str.find(dest) != std::string::npos) {
             return true;
         } else {
@@ -1052,7 +1052,7 @@ export namespace convert {
 #ifdef LIBIO_ERROR
             throw std::runtime_error("Cannot convert string to '" + source + "' in int " + e.what());
 #else
-            std::cerr << "split_by_first_delim: delimiter not found" << std::endl;
+            std::cerr << "convert_to_t" << std::endl;
             return -1;
 #endif
         }
