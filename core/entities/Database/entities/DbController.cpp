@@ -1,23 +1,22 @@
 #include "DbController.hpp"
+
 #include <QMessageBox>
-#include <pqxx/pqxx>
 
 DB_controller::~DB_controller() = default;
 
 DB_controller::DB_controller(DB_controller &&other) noexcept
-        :
-        cx(std::move(other.cx)),
-        prepared(other.prepared),
-        host(std::move(other.host)),
-        port(std::move(other.port)),
-        db_name(std::move(other.db_name)),
-        user_name(std::move(other.user_name)),
-        password(std::move(other.password)) {
+        : cx(std::move(other.cx)),
+          prepared(other.prepared),
+          host(std::move(other.host)),
+          port(std::move(other.port)),
+          db_name(std::move(other.db_name)),
+          user_name(std::move(other.user_name)),
+          password(std::move(other.password)) {
 }
 
 DB_controller &DB_controller::operator=(DB_controller &&other) noexcept {
     if (this != &other) {
-//        cx = std::move(other.cx);
+        cx = std::move(other.cx);
         prepared = other.prepared;
         host = std::move(other.host);
         port = std::move(other.port);
@@ -41,11 +40,11 @@ void DB_controller::connect() {
     }
     catch (const pqxx::broken_connection &e) {
         QMessageBox(QMessageBox::Icon::Critical, "Error", e.what()).exec();
-        throw;
+        return;
     }
     catch (...) {
         QMessageBox(QMessageBox::Icon::Critical, "Error", "Unknown DB error").exec();
-        throw;
+        return;
     }
 }
 
@@ -81,9 +80,11 @@ void DB_controller::init_tables() {
     }
     catch (pqxx::broken_connection &e) {
         QMessageBox(QMessageBox::Icon::Warning, "Warning", e.what()).exec();
+        return;
     }
     catch (...) {
         QMessageBox(QMessageBox::Icon::Warning, "Warning", "Error in initializing tables").exec();
+        return;
     }
 }
 
@@ -127,9 +128,11 @@ QList<SearchHit> DB_controller::find_words(const QList<QString> &query_words) co
     }
     catch (const pqxx::sql_error &e) {
         QMessageBox(QMessageBox::Icon::Warning, "Warning", "Failed to search words").exec();
+        return {};
     }
     catch (...) {
         QMessageBox(QMessageBox::Icon::Warning, "Warning", "Exception in find words").exec();
+        return {};
     }
 
     return results;

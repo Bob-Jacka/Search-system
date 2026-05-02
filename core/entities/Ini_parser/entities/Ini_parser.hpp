@@ -78,7 +78,7 @@ T Ini_parser::get_value(const std::string &section_param) const {
                     }
                 } catch (const std::exception &e) {
                     printf("Exception on line: %s - %s in file %s", __LINE__,
-                           "Error retrieving value: " + std::string(e.what()), __FILE_NAME__);
+                           "Error retrieving value", __FILE_NAME__);
                 }
             }
         }

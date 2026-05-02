@@ -2,14 +2,15 @@
 #include <algorithm>
 #include <QMessageBox>
 
-void Indexer::collect_files(const filesys::path &path, std::vector<std::pair<filesys::path, std::string>> &files) {
+void Indexer::collect_files(const std::filesystem::path &path,
+                            std::vector<std::pair<std::filesystem::path, std::string>> &files) {
     try {
-        for (const auto &entry: filesys::directory_iterator(path)) {
+        for (const auto &entry: std::filesystem::directory_iterator(path)) {
             const auto &dir_path = entry.path();
 
-            if (filesys::is_directory(dir_path)) {
+            if (std::filesystem::is_directory(dir_path)) {
                 collect_files(dir_path, files);
-            } else if (filesys::is_regular_file(dir_path)) {
+            } else if (std::filesystem::is_regular_file(dir_path)) {
                 const auto ext = dir_path.extension().string();
                 if (std::ranges::any_of(valid_pattern, [&ext](const std::string &pattern) -> bool {
                     return ext == "." + pattern; //some kind of trick to compare extension and pattern
@@ -24,7 +25,7 @@ void Indexer::collect_files(const filesys::path &path, std::vector<std::pair<fil
     }
 }
 
-void Indexer::process_file(const filesys::path &file_path, const std::string &file_name) {
+void Indexer::process_file(const std::filesystem::path &file_path, const std::string &file_name) {
     try {
         std::string content = libio::file::read_file2(file_path.string());
 
@@ -58,14 +59,14 @@ void Indexer::process_file(const filesys::path &file_path, const std::string &fi
  * @param start_point starting point to execute indexer co program
  */
 void Indexer::process_dir(const std::string &start_point) {
-    const filesys::path dir(start_point);
+    const std::filesystem::path dir(start_point);
 
-    if (!filesys::exists(dir) || !std::filesystem::is_directory(dir)) {
+    if (!std::filesystem::exists(dir) || !std::filesystem::is_directory(dir)) {
         libio::output::println("[Error] - path is not exist or not a directory");
         return;
     }
 
-    std::vector<std::pair<filesys::path, std::string>> files;
+    std::vector<std::pair<std::filesystem::path, std::string>> files;
     collect_files(dir, files);
 
     std::for_each(files.begin(), files.end(),
@@ -83,7 +84,7 @@ std::unordered_map<std::string, int> Indexer::count_freq(const std::vector<std::
     return freq_res;
 }
 
-Indexer::Indexer(DB_controller* db, const std::string &pattern) {
+Indexer::Indexer(DB_controller *db, const std::string &pattern) {
     controller = db;
     valid_pattern = libio::string::split(pattern, ',');
 }

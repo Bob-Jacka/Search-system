@@ -8,17 +8,15 @@
 
 import Libio;
 
-namespace filesys = std::filesystem;
-
 class Indexer {
 private:
     DB_controller *controller;
     std::vector<std::string> valid_pattern;
     std::mutex db_mutex;
 
-    void collect_files(const filesys::path &path, std::vector<std::pair<filesys::path, std::string>> &files);
+    void collect_files(const std::filesystem::path &path, std::vector<std::pair<std::filesystem::path, std::string>> &files);
 
-    void process_file(const filesys::path &file_path, const std::string &file_name);
+    void process_file(const std::filesystem::path &file_path, const std::string &file_name);
 
     static std::unordered_map<std::string, int> count_freq(const std::vector<std::string> &words);
 

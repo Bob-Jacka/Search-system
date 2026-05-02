@@ -2,17 +2,17 @@
 #define NETOLIBPQ_DBCONTROLLER_HPP
 
 #include <QList>
+#include <QString>
 
-#include <pqxx/pqxx>
 #include <string>
 #include <unordered_map>
-#include <QString>
 #include "../../UI/entities/SearchHit.hpp"
+#include <pqxx/pqxx>
 
 class DB_controller {
 private:
     std::unique_ptr<pqxx::connection> cx; //one connection to rule the world
-    bool prepared = false;
+    bool prepared{};
 
     DB_controller() = default;
 
@@ -23,6 +23,8 @@ private:
     std::string password;
 
 public:
+    friend class DB_controller_builder;
+
     ~DB_controller();
 
     DB_controller(DB_controller &&) noexcept;
@@ -33,8 +35,6 @@ public:
 
     void connect();
 
-    friend class DB_controller_builder;
-
     void init_tables();
 
     void drop_tables() const;
@@ -43,7 +43,7 @@ public:
                       const std::string &dir_path,
                       const std::string &file_name) noexcept(false);
 
-    [[nodiscard]] QList<SearchHit> find_words(const QList<QString> &query_words) const noexcept;
+    [[nodiscard]] QList <SearchHit> find_words(const QList <QString> &query_words) const noexcept;
 
     [[nodiscard]] std::vector<SearchHit> find_words(const std::vector<std::string> &query_words) const noexcept;
 };
