@@ -1,5 +1,4 @@
 #include "Indexer.hpp"
-#include <algorithm>
 #include "../../Database/entities/DbController.hpp"
 
 void Indexer::collect_files(const std::filesystem::path &path,
@@ -24,39 +23,11 @@ void Indexer::collect_files(const std::filesystem::path &path,
     }
 }
 
-void Indexer::process_file(const std::filesystem::path &file_path, const std::string &file_name) {
-    try {
-        std::string content = libio::file::read_file2(file_path.string());
-
-        //delete punctuation
-        std::ranges::transform(content, content.begin(), [](unsigned char c) -> unsigned char {
-            return std::ispunct(c) || c == '\n' ? ' ' : c;
-        });
-
-        //to lower case
-        content = libio::string::change_string_register(content, true);
-
-        //split
-        auto words = libio::string::split(content, ' ');
-
-        //delete empty
-        std::erase_if(words, [](const std::string &w) { return w.empty(); });
-
-        auto freq = count_freq(words);
-
-        //database things
-        std::lock_guard<std::mutex> lock(db_mutex);
-        controller->add_document(freq, file_path.string(), file_name);
-    } catch (...) {
-        return;
-    }
-}
-
 /**
  * Entry point to indexer program
  * @param start_point starting point to execute indexer co program
  */
-void Indexer::process_dir(const std::string &start_point) {
+void Indexer::process_dir(const std::string &start_point, DB_controller *db_controller) {
     const std::filesystem::path dir(start_point);
 
     if (!std::filesystem::exists(dir) || !std::filesystem::is_directory(dir)) {
@@ -68,8 +39,35 @@ void Indexer::process_dir(const std::string &start_point) {
     collect_files(dir, files);
 
     std::for_each(files.begin(), files.end(),
-                  [this](auto &file_info) {
-                      process_file(file_info.first, file_info.second);
+                  [&db_controller](auto &file_info) {
+                      auto file_path = file_info.first;
+                      auto file_name = file_info.second;
+                      std::mutex db_mutex;
+                      try {
+                          std::string content = libio::file::read_file2(file_path.string());
+
+                          //delete punctuation
+                          std::ranges::transform(content, content.begin(), [](unsigned char c) -> unsigned char {
+                              return std::ispunct(c) || c == '\n' ? ' ' : c;
+                          });
+
+                          //to lower case
+                          content = libio::string::change_string_register(content, true);
+
+                          //split
+                          auto words = libio::string::split(content, ' ');
+
+                          //delete empty
+                          std::erase_if(words, [](const std::string &w) { return w.empty(); });
+
+                          auto freq = Indexer::count_freq(words);
+
+                          //database things
+                          std::lock_guard<std::mutex> lock(db_mutex);
+                          db_controller->add_document(freq, file_path.string(), file_name);
+                      } catch (...) {
+                          return;
+                      }
                   }
     );
 }
@@ -82,7 +80,15 @@ std::unordered_map<std::string, int> Indexer::count_freq(const std::vector<std::
     return freq_res;
 }
 
-Indexer::Indexer(DB_controller *db, const std::string &pattern) {
-    controller = db;
+Indexer::Indexer(const std::string &pattern) {
     valid_pattern = libio::string::split(pattern, ',');
+}
+
+Indexer &Indexer::operator=(const Indexer &other) {
+    if (this == &other) {
+        return *this;
+    }
+
+    valid_pattern = other.valid_pattern;
+    return *this;
 }

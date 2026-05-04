@@ -1,9 +1,9 @@
 #ifndef NETOLIBPQ_DBCONTROLLER_HPP
 #define NETOLIBPQ_DBCONTROLLER_HPP
 
+#include <pqxx/pqxx>
 #include <string>
 #include <unordered_map>
-#include <pqxx/pqxx>
 #include "../../UI/entities/SearchHit.hpp"
 
 class DB_controller {
@@ -14,6 +14,8 @@ private:
 public:
     DB_controller(const std::string &host, const std::string &port, const std::string &db_name,
                   const std::string &user_name, const std::string &password);
+
+    DB_controller() = delete;
 
     ~DB_controller();
 

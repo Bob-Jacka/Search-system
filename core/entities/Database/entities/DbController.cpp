@@ -175,3 +175,12 @@ DB_controller::DB_controller(const std::string &host, const std::string &port, c
         return;
     }
 }
+
+//DB_controller &DB_controller::operator=(const DB_controller &other) {
+//    if (this == &other) {
+//        return *this;
+//    }
+//    cx.swap(other.cx);
+//    prepared = other.prepared;
+//    return *this;
+//}

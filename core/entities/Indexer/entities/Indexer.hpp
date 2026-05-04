@@ -3,32 +3,38 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <mutex>
-#include "../../Database/entities/DbController.hpp"
+#include <algorithm>
+
+#include <filesystem>
 
 import Libio;
 
+struct DB_controller;
+
 class Indexer {
 private:
-    DB_controller *controller;
     std::vector<std::string> valid_pattern;
-    std::mutex db_mutex;
 
-    void collect_files(const std::filesystem::path &path, std::vector<std::pair<std::filesystem::path, std::string>> &files);
-
-    void process_file(const std::filesystem::path &file_path, const std::string &file_name);
-
-    static std::unordered_map<std::string, int> count_freq(const std::vector<std::string> &words);
+    void
+    collect_files(const std::filesystem::path &path, std::vector<std::pair<std::filesystem::path, std::string>> &files);
 
 public:
 
     Indexer() = delete;
 
-    Indexer(DB_controller *, const std::string &pattern);
+    Indexer(const Indexer &) = delete;
+
+    Indexer& operator=(const Indexer& other);
+
+    explicit Indexer(const std::string &pattern);
 
     ~Indexer() = default;
 
-    void process_dir(const std::string &start_point);
+    void process_dir(const std::string &start_point, DB_controller *db_controller);
+
+    static std::unordered_map<std::string, int> count_freq(const std::vector<std::string> &words);
 };
 
 #endif

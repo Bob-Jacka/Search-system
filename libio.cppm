@@ -38,7 +38,7 @@ module;
 #pragma message("Using experimental features")
 
 #include <cmath>
-#incldue <vector>
+#include <vector>
 #include <iterator>
 #include <sstream>
 #endif

@@ -1,6 +1,7 @@
 #include "core/entities/Database/entities/DbController.hpp"
-#include "core/entities/Ini_parser/entities/Ini_parser.hpp"
 #include "core/entities/Indexer/entities/Indexer.hpp"
+#include "core/entities/Ini_parser/entities/Ini_parser.hpp"
+#include "core/entities/UI/entities/SearchHit.hpp"
 #include <future>
 #include <iostream>
 
@@ -25,11 +26,11 @@ int main(int argc, char *argv[]) {
                                                     ini_parser->get_value<std::string>("Database.password"));
     db_controller->drop_tables(); //drop existing tables
 
-    indexer = std::make_unique<Indexer>(db_controller.get(), ini_parser->get_value<std::string>("Settings.extensions"));
+    indexer = std::make_unique<Indexer>(ini_parser->get_value<std::string>("Settings.extensions"));
     db_controller->init_tables(); //and then init them
 
-    auto task = std::async(std::launch::async, [&indexer, &ini_parser]() {
-        indexer->process_dir(ini_parser->get_value<std::string>("Settings.start_path"));
+    auto task = std::async(std::launch::async, [&indexer, &ini_parser, &db_controller]() {
+        indexer->process_dir(ini_parser->get_value<std::string>("Settings.start_path"), db_controller.get());
     });
     task.get();
 
